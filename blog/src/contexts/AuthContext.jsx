@@ -26,19 +26,28 @@ export const AuthProvider = ({ children }) => {
   // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('=== AUTH STATE CHANGED ===');
+      console.log('Firebase User:', user);
+      
       if (user) {
         // Get additional user data from Firestore
         try {
+          console.log('Fetching user data from Firestore for UID:', user.uid);
           const userDoc = await getDoc(doc(db, 'users', user.uid));
+          console.log('User document exists:', userDoc.exists());
+          
           if (userDoc.exists()) {
+            const userData = userDoc.data();
+            console.log('User data from Firestore:', userData);
             setCurrentUser({
               uid: user.uid,
               email: user.email,
-              name: userDoc.data().name,
-              avatar: userDoc.data().name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
-              createdAt: userDoc.data().createdAt
+              name: userData.name,
+              avatar: userData.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
+              createdAt: userData.createdAt
             });
           } else {
+            console.log('User document not found, using fallback data');
             // Fallback to basic user info
             setCurrentUser({
               uid: user.uid,
@@ -59,9 +68,11 @@ export const AuthProvider = ({ children }) => {
           });
         }
       } else {
+        console.log('No user authenticated');
         setCurrentUser(null);
       }
       setLoading(false);
+      console.log('=== END AUTH STATE CHANGED ===');
     });
 
     return unsubscribe;
@@ -69,23 +80,33 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password, name) => {
     try {
+      console.log('=== REGISTER FUNCTION CALLED ===');
+      console.log('Registering user:', { email, name });
+      
       // Create user with Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      console.log('Firebase Auth user created:', user.uid);
 
       // Update profile with display name
       await updateProfile(user, {
         displayName: name
       });
+      console.log('Profile updated with display name');
 
       // Save additional user data to Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      const userData = {
         name,
         email,
         createdAt: new Date().toISOString(),
         avatar: name.charAt(0).toUpperCase()
-      });
+      };
+      console.log('Saving user data to Firestore:', userData);
+      
+      await setDoc(doc(db, 'users', user.uid), userData);
+      console.log('User data saved to Firestore successfully');
 
+      console.log('=== REGISTER FUNCTION SUCCESS ===');
       return { success: true, user };
     } catch (error) {
       let errorMessage = 'An error occurred during registration';

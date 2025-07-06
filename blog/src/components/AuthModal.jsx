@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -8,6 +8,17 @@ import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle } from 'luci
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
   const [mode, setMode] = useState(initialMode);
+  
+  // Update mode when initialMode prop changes
+  useEffect(() => {
+    setMode(initialMode);
+    // Clear form fields when mode changes
+    setEmail('');
+    setPassword('');
+    setName('');
+    setError('');
+    setSuccess('');
+  }, [initialMode]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');

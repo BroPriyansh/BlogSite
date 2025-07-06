@@ -10,7 +10,7 @@ import AuthModal from './components/AuthModal';
 import Notification from './components/Notification';
 import Editor from './components/Editor';
 import { useAuth } from './contexts/AuthContext';
-import { getPosts, createPost, updatePost, deletePost, likePost, getLikeCount, checkUserLike, addComment, getComments, deleteComment } from './services/postsService';
+import { getPosts, createPost, updatePost, deletePost } from './services/postsService';
 import { formatDateOnly } from './utils/dateUtils';
 
 
@@ -397,7 +397,6 @@ Start experimenting with CSS Grid today and discover how it can transform your a
   const savePost = useCallback(async (post) => {
     console.log('=== SAVE POST FUNCTION CALLED ===');
     console.log('Post data:', post);
-    console.log('Current user:', currentUser);
     
     if (!currentUser) {
       console.error('❌ No current user');
@@ -409,6 +408,8 @@ Start experimenting with CSS Grid today and discover how it can transform your a
     }
 
     console.log('✅ User authenticated, starting save...');
+    console.log('User UID for save:', currentUser.uid);
+    console.log('User Name for save:', currentUser.name);
     setIsSaving(true);
     
     try {
@@ -622,7 +623,19 @@ Start experimenting with CSS Grid today and discover how it can transform your a
   const isAdmin = currentUser?.email === 'memuforpc12@gmail.com';
 
   const handleDeletePost = async (post) => {
-    if (!currentUser || (post.authorId !== currentUser.uid && !isAdmin)) {
+    
+    if (!currentUser) {
+      setNotification({
+        message: 'Please log in to delete posts',
+        type: 'error'
+      });
+      return;
+    }
+
+    // Check if user can delete this post
+    const canDelete = post.authorId === currentUser.uid || isAdmin;
+    
+    if (!canDelete) {
       setNotification({
         message: isAdmin ? 'You can only delete posts as admin.' : 'You can only delete your own posts.',
         type: 'error'
@@ -810,6 +823,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                         <LogOut className="w-4 h-4 mr-2" />
                         Logout
                       </Button>
+
 
                     </>
                   ) : (
@@ -1523,6 +1537,8 @@ Start experimenting with CSS Grid today and discover how it can transform your a
               onClose={() => setShowAuthModal(false)}
               initialMode={authMode}
             />
+
+
           </main>
 
           {/* Footer */}
