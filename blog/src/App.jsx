@@ -7,9 +7,10 @@ import { Label } from './components/ui/label';
 import { Edit, Save, Upload, Clock, Pen, BookOpen, Mail, Twitter, Linkedin, Github, Menu, User, Calendar, Star, LogOut, LogIn, UserPlus } from "lucide-react";
 import ArticleView from './components/ArticleView';
 import AuthModal from './components/AuthModal';
+import Notification from './components/Notification';
 import { useAuth } from './contexts/AuthContext';
 import { getPosts, createPost, updatePost } from './services/postsService';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from './firebase';
 
 function App() {
@@ -29,6 +30,8 @@ function App() {
   const [viewingPost, setViewingPost] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login');
+  const [notification, setNotification] = useState(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const { currentUser, logout, loading: authLoading } = useAuth();
 
@@ -636,25 +639,41 @@ The key is to start simple and gradually add features as your understanding grow
   }, []);
 
   const savePost = useCallback(async (post) => {
+    console.log('=== SAVE POST FUNCTION CALLED ===');
+    console.log('Post data:', post);
+    console.log('Current user:', currentUser);
+    
     if (!currentUser) {
-      alert('Please log in to create or edit posts');
+      console.error('❌ No current user');
+      setNotification({
+        message: 'Please log in to create or edit posts',
+        type: 'error'
+      });
       return;
     }
 
+    console.log('✅ User authenticated, starting save...');
     setIsSaving(true);
     
     try {
       if (post.id) {
+        console.log('🔄 Updating existing post:', post.id);
         // Check if user owns this post
         const existingPost = posts.find(p => p.id === post.id);
         if (existingPost && existingPost.authorId !== currentUser.uid) {
-          alert('You can only edit your own posts');
+          console.error('❌ User does not own this post');
+          setNotification({
+            message: 'You can only edit your own posts',
+            type: 'error'
+          });
           setIsSaving(false);
           return;
         }
 
         // Update existing post in Firestore
+        console.log('📝 Calling updatePost...');
         await updatePost(post.id, post);
+        console.log('✅ Post updated successfully');
         
         // Update local state
         const updatedPosts = posts.map(p => 
@@ -662,15 +681,33 @@ The key is to start simple and gradually add features as your understanding grow
         );
         setPosts(updatedPosts);
       } else {
+        console.log('🆕 Creating new post...');
+        // Remove undefined id for new posts
+        const postWithoutId = { ...post };
+        delete postWithoutId.id;
+        console.log('Calling createPost with:', { post: postWithoutId, userId: currentUser.uid, userName: currentUser.name });
+        
         // Create new post in Firestore
-        const newPost = await createPost(post, currentUser.uid, currentUser.name);
+        const newPost = await createPost(postWithoutId, currentUser.uid, currentUser.name);
+        console.log('✅ New post created:', newPost);
         setPosts([newPost, ...posts]);
       }
       
       setLastSaved(new Date().toISOString());
+      console.log('✅ Save completed successfully');
+      setNotification({
+        message: 'Post saved successfully!',
+        type: 'success'
+      });
     } catch (error) {
-      console.error('Error saving post:', error);
+      console.error('❌ Error saving post to Firestore:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       
+      console.log('🔄 Falling back to local storage...');
       // Fallback to local storage if Firestore fails
       try {
         const now = new Date().toISOString();
@@ -691,13 +728,21 @@ The key is to start simple and gradually add features as your understanding grow
           setPosts([newPost, ...posts]);
         }
         setLastSaved(now);
-        alert('Post saved locally (Firestore unavailable)');
+        console.log('✅ Fallback save successful');
+        setNotification({
+          message: 'Post saved locally (Firestore unavailable)',
+          type: 'error'
+        });
       } catch (fallbackError) {
-        console.error('Fallback save failed:', fallbackError);
-        alert('Error saving post. Please try again.');
+        console.error('❌ Fallback save failed:', fallbackError);
+        setNotification({
+          message: 'Error saving post. Please try again.',
+          type: 'error'
+        });
       }
     } finally {
       setIsSaving(false);
+      console.log('=== SAVE POST FUNCTION COMPLETED ===');
     }
   }, [posts, currentUser]);
 
@@ -801,15 +846,82 @@ The key is to start simple and gradually add features as your understanding grow
   // Test Firestore connectivity
   const testFirestore = async () => {
     try {
+      console.log('=== Firestore Diagnostic Test ===');
+      console.log('Current user:', currentUser);
+      console.log('Auth state:', currentUser ? 'Authenticated' : 'Not authenticated');
+      
+      if (!currentUser) {
+        setNotification({
+          message: 'Please log in first to test Firestore',
+          type: 'error'
+        });
+        return false;
+      }
+      
       console.log('Testing Firestore connectivity...');
+      console.log('Firebase config:', {
+        projectId: 'dashboard-c1927',
+        authDomain: 'dashboard-c1927.firebaseapp.com'
+      });
+      
+      // Test 1: Try to write to test collection
+      console.log('Test 1: Writing to test collection...');
       const testDoc = await addDoc(collection(db, 'test'), {
         test: true,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
+        userId: currentUser.uid,
+        userName: currentUser.name
       });
-      console.log('Firestore test successful:', testDoc.id);
+      console.log('✅ Test 1 successful:', testDoc.id);
+      
+      // Test 2: Try to write to posts collection
+      console.log('Test 2: Writing to posts collection...');
+      const postDoc = await addDoc(collection(db, 'posts'), {
+        title: 'Test Post',
+        content: 'This is a test post',
+        authorId: currentUser.uid,
+        authorName: currentUser.name,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        status: 'draft'
+      });
+      console.log('✅ Test 2 successful:', postDoc.id);
+      
+      // Clean up test documents
+      console.log('Cleaning up test documents...');
+      await deleteDoc(doc(db, 'test', testDoc.id));
+      await deleteDoc(doc(db, 'posts', postDoc.id));
+      
+      setNotification({
+        message: 'Firestore connection successful! All tests passed.',
+        type: 'success'
+      });
       return true;
     } catch (error) {
-      console.error('Firestore test failed:', error);
+      console.error('❌ Firestore test failed:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      let errorMessage = 'Firestore connection failed';
+      if (error.code === 'permission-denied') {
+        errorMessage = 'Permission denied. Check Firestore security rules.';
+      } else if (error.code === 'unavailable') {
+        errorMessage = 'Firestore service unavailable.';
+      } else if (error.code === 'not-found') {
+        errorMessage = 'Firestore database not found.';
+      } else if (error.code === 'resource-exhausted') {
+        errorMessage = 'Service temporarily unavailable.';
+      } else if (error.code === 'network-error') {
+        errorMessage = 'Network error. Check internet connection.';
+      }
+      
+      setNotification({
+        message: `${errorMessage} (Code: ${error.code})`,
+        type: 'error'
+      });
       return false;
     }
   };
@@ -823,6 +935,15 @@ The key is to start simple and gradually add features as your understanding grow
   const publishedPosts = posts.filter(post => post.status === 'published');
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      {/* Notification */}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+      
       {/* Loading Screen */}
       {authLoading && (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -838,124 +959,248 @@ The key is to start simple and gradually add features as your understanding grow
       {!authLoading && (
         <>
           {/* Header */}
-          <header className="bg-white shadow-sm sticky top-0">
-            <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <Pen className="w-6 h-6 text-indigo-600" />
-                <span className="text-xl font-bold text-gray-900">WriteMind</span>
-              </div>
-              <nav className="hidden md:flex space-x-8">
-                <button 
-                  onClick={() => setActiveTab('home')}
-                  className={`${activeTab === 'home' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-medium`}
+          <header className="bg-white shadow-sm sticky top-0 z-50">
+            <div className="container mx-auto px-4 py-3 sm:py-4">
+              <div className="flex justify-between items-center">
+                {/* Logo */}
+                <div className="flex items-center space-x-2">
+                  <Pen className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
+                  <span className="text-lg sm:text-xl font-bold text-gray-900">WriteMind</span>
+                </div>
+                
+                {/* Desktop Navigation */}
+                <nav className="hidden lg:flex space-x-8">
+                  <button 
+                    onClick={() => setActiveTab('home')}
+                    className={`${activeTab === 'home' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-medium transition-colors`}
+                  >
+                    Home
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('list')}
+                    className={`${activeTab === 'list' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-medium transition-colors`}
+                  >
+                    Blog
+                  </button>
+                  <a href="#about" className="text-gray-500 hover:text-indigo-600 font-medium transition-colors">About</a>
+                  <a href="#contact" className="text-gray-500 hover:text-indigo-600 font-medium transition-colors">Contact</a>
+                </nav>
+                
+                {/* Mobile Menu Button */}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="lg:hidden"
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
                 >
-                  Home
-                </button>
-                <button 
-                  onClick={() => setActiveTab('list')}
-                  className={`${activeTab === 'list' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-medium`}
-                >
-                  Blog
-                </button>
-                <a href="#about" className="text-gray-500 hover:text-indigo-600 font-medium">About</a>
-                <a href="#contact" className="text-gray-500 hover:text-indigo-600 font-medium">Contact</a>
-              </nav>
-              <Button 
-                variant="outline" 
-                className="md:hidden"
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-              <div className="hidden md:flex items-center space-x-4">
-                {currentUser ? (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold text-sm">
-                        {currentUser.avatar}
+                  <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Button>
+                
+                {/* Desktop User Actions */}
+                <div className="hidden lg:flex items-center space-x-3">
+                  {currentUser ? (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold text-sm">
+                          {currentUser.avatar}
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">{currentUser.name}</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-700">{currentUser.name}</span>
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNewPost}
+                      >
+                        New Post
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={logout}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Logout
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={testFirestore}
+                        className="text-gray-500 hover:text-gray-700"
+                        title="Test Firestore"
+                      >
+                        🔧
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={async () => {
+                          if (!currentUser) {
+                            setNotification({
+                              message: 'Please log in first',
+                              type: 'error'
+                            });
+                            return;
+                          }
+                          try {
+                            console.log('Quick test: Creating simple post...');
+                            const testPost = await createPost({
+                              title: 'Quick Test',
+                              content: 'Testing Firestore connection',
+                              tags: 'test',
+                              status: 'draft'
+                            }, currentUser.uid, currentUser.name);
+                            console.log('Quick test successful:', testPost);
+                            setNotification({
+                              message: 'Quick test successful!',
+                              type: 'success'
+                            });
+                          } catch (error) {
+                            console.error('Quick test failed:', error);
+                            setNotification({
+                              message: `Quick test failed: ${error.message}`,
+                              type: 'error'
+                            });
+                          }
+                        }}
+                        className="text-gray-500 hover:text-gray-700"
+                        title="Quick Test"
+                      >
+                        ⚡
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setAuthMode('login');
+                          setShowAuthModal(true);
+                        }}
+                      >
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Sign In
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          setAuthMode('register');
+                          setShowAuthModal(true);
+                        }}
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Sign Up
+                      </Button>
                     </div>
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      onClick={handleNewPost}
-                    >
-                      New Post
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={logout}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Logout
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={testFirestore}
-                      className="text-gray-500 hover:text-gray-700"
-                      title="Test Firestore"
-                    >
-                      🔧
-                    </Button>
-                  </>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setAuthMode('login');
-                        setShowAuthModal(true);
-                      }}
-                    >
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Sign In
-                    </Button>
-                    <Button 
-                      size="sm"
-                      onClick={() => {
-                        setAuthMode('register');
-                        setShowAuthModal(true);
-                      }}
-                    >
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Sign Up
-                    </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
+              
+              {/* Mobile Menu */}
+              {showMobileMenu && (
+                <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+                  <div className="px-4 py-4 space-y-4">
+                    {/* Mobile Navigation */}
+                    <nav className="space-y-3">
+                      <button 
+                        onClick={() => { setActiveTab('home'); setShowMobileMenu(false); }}
+                        className={`block w-full text-left py-2 px-3 rounded-lg ${activeTab === 'home' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        Home
+                      </button>
+                      <button 
+                        onClick={() => { setActiveTab('list'); setShowMobileMenu(false); }}
+                        className={`block w-full text-left py-2 px-3 rounded-lg ${activeTab === 'list' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        Blog
+                      </button>
+                      <a href="#about" className="block py-2 px-3 rounded-lg text-gray-600 hover:bg-gray-50">About</a>
+                      <a href="#contact" className="block py-2 px-3 rounded-lg text-gray-600 hover:bg-gray-50">Contact</a>
+                    </nav>
+                    
+                    {/* Mobile User Actions */}
+                    <div className="border-t border-gray-200 pt-4">
+                      {currentUser ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold text-sm">
+                              {currentUser.avatar}
+                            </div>
+                            <span className="text-sm font-medium text-gray-700">{currentUser.name}</span>
+                          </div>
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => { handleNewPost(); setShowMobileMenu(false); }}
+                          >
+                            New Post
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="w-full text-gray-500"
+                            onClick={() => { logout(); setShowMobileMenu(false); }}
+                          >
+                            <LogOut className="w-4 h-4 mr-2" />
+                            Logout
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="w-full"
+                            onClick={() => { setAuthMode('login'); setShowAuthModal(true); setShowMobileMenu(false); }}
+                          >
+                            <LogIn className="w-4 h-4 mr-2" />
+                            Sign In
+                          </Button>
+                          <Button 
+                            size="sm"
+                            className="w-full"
+                            onClick={() => { setAuthMode('register'); setShowAuthModal(true); setShowMobileMenu(false); }}
+                          >
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Sign Up
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </header>
 
           <main className="flex-grow">
             {/* Hero Section */}
             {activeTab === 'home' && (
-              <section className="relative bg-gradient-to-br from-indigo-50 to-blue-100 py-20 md:py-32 overflow-hidden">
+              <section className="relative bg-gradient-to-br from-indigo-50 to-blue-100 py-12 sm:py-16 md:py-20 lg:py-32 overflow-hidden">
                 <div className="absolute inset-0 opacity-10">
                   <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMEMzLjU4IDAgMCAzLjU4IDAgOEMwIDEyLjQyIDMuNTggMTYgOCAxNkMxMi40MiAxNiAxNiAxMi40MiAxNiA4QzE2IDMuNTggMTIuNDIgMCA4IDBaTTggMTVDNC4xNCAxNSAxIDExLjg2IDEgOEMxIDQuMTQgNC4xNCAxIDggMUMxMS44NiAxIDE1IDQuMTQgMTUgOEMxNSAxMS44NiAxMS44NiAxNSA4IDE1WiIgZmlsbD0iIzRDNThGQiIvPgo8L3N2Zz4=')]"></div>
                 </div>
                 <div className="container mx-auto px-4 text-center relative z-10">
-                  <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
                     Write, Publish & <span className="text-indigo-600">Share</span> Your Ideas
                   </h1>
-                  <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+                  <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
                     A beautiful platform for writers to create content, build an audience, and share their knowledge with the world.
                   </p>
-                  <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
                     <Button 
                       size="lg"
                       onClick={handleNewPost}
-                      className="px-8 py-4 text-lg"
+                      className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
                     >
                       Start Writing Now
                     </Button>
                     <Button 
                       variant="outline" 
                       size="lg"
-                      className="px-8 py-4 text-lg"
+                      className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
                       onClick={() => setActiveTab('list')}
                     >
                       Explore Articles
@@ -967,15 +1212,15 @@ The key is to start simple and gradually add features as your understanding grow
 
             {/* Features Section */}
             {activeTab === 'home' && (
-              <section className="py-16 bg-white">
+              <section className="py-12 sm:py-16 bg-white">
                 <div className="container mx-auto px-4">
-                  <div className="text-center mb-16">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose WriteMind?</h2>
-                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                  <div className="text-center mb-12 sm:mb-16">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">Why Choose WriteMind?</h2>
+                    <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
                       Everything you need to create and share your content with the world
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                     <Card className="hover:shadow-lg transition-all">
                       <CardHeader>
                         <div className="bg-indigo-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
@@ -1210,12 +1455,12 @@ The key is to start simple and gradually add features as your understanding grow
                 
                 {/* Show editor only if user is logged in */}
                 {activeTab === 'editor' && currentUser && (
-                  <section className="py-12 bg-gray-50">
+                  <section className="py-8 sm:py-12 bg-gray-50">
                     <div className="container mx-auto px-4">
                       <div className="max-w-4xl mx-auto">
                         <Card>
                           <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
+                            <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <span>{currentPost ? 'Edit Post' : 'New Post'}</span>
                               {lastSaved && (
                                 <div className="flex items-center text-sm text-muted-foreground">
@@ -1257,11 +1502,12 @@ The key is to start simple and gradually add features as your understanding grow
                               />
                             </div>
                           </CardContent>
-                          <CardFooter className="flex justify-between">
+                          <CardFooter className="flex flex-col sm:flex-row justify-between gap-3">
                             <Button
                               variant="outline"
                               onClick={handleSaveDraft}
                               disabled={isSaving || (!title && !content)}
+                              className="w-full sm:w-auto"
                             >
                               <Save className="w-4 h-4 mr-2" />
                               {isSaving ? 'Saving...' : 'Save Draft'}
@@ -1269,6 +1515,7 @@ The key is to start simple and gradually add features as your understanding grow
                             <Button
                               onClick={handlePublish}
                               disabled={isSaving || !title || !content}
+                              className="w-full sm:w-auto"
                             >
                               <Upload className="w-4 h-4 mr-2" />
                               {isSaving ? 'Publishing...' : 'Publish'}
@@ -1282,17 +1529,17 @@ The key is to start simple and gradually add features as your understanding grow
 
                 {/* Show blog list */}
                 {activeTab === 'list' && (
-                  <section className="py-12 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+                  <section className="py-8 sm:py-12 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
                     <div className="container mx-auto px-4">
                       <div className="max-w-7xl mx-auto">
                         {/* Header Section */}
-                        <div className="mb-12">
-                          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div className="mb-8 sm:mb-12">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
                             <div>
-                              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
                                 {filter === 'all' ? 'All Posts' : filter === 'drafts' ? 'Drafts' : 'Published Posts'}
                               </h1>
-                              <p className="text-lg text-gray-600">
+                              <p className="text-base sm:text-lg text-gray-600">
                                 {filter === 'all' 
                                   ? 'Discover articles from our community of writers' 
                                   : filter === 'drafts' 
@@ -1303,12 +1550,12 @@ The key is to start simple and gradually add features as your understanding grow
                             </div>
                             
                             {/* Filter Buttons */}
-                            <div className="flex items-center space-x-2 bg-white rounded-xl p-1 shadow-sm border border-gray-200">
+                            <div className="flex items-center space-x-1 sm:space-x-2 bg-white rounded-xl p-1 shadow-sm border border-gray-200">
                               <Button 
                                 variant={filter === 'all' ? 'default' : 'ghost'} 
                                 size="sm"
                                 onClick={() => setFilter('all')}
-                                className="rounded-lg"
+                                className="rounded-lg text-xs sm:text-sm px-2 sm:px-3"
                               >
                                 All
                               </Button>
@@ -1316,7 +1563,7 @@ The key is to start simple and gradually add features as your understanding grow
                                 variant={filter === 'drafts' ? 'default' : 'ghost'} 
                                 size="sm"
                                 onClick={() => setFilter('drafts')}
-                                className="rounded-lg"
+                                className="rounded-lg text-xs sm:text-sm px-2 sm:px-3"
                               >
                                 Drafts
                               </Button>
@@ -1324,7 +1571,7 @@ The key is to start simple and gradually add features as your understanding grow
                                 variant={filter === 'published' ? 'default' : 'ghost'} 
                                 size="sm"
                                 onClick={() => setFilter('published')}
-                                className="rounded-lg"
+                                className="rounded-lg text-xs sm:text-sm px-2 sm:px-3"
                               >
                                 Published
                               </Button>
@@ -1332,7 +1579,7 @@ The key is to start simple and gradually add features as your understanding grow
                           </div>
                         </div>
 
-                        <div className="flex flex-col lg:flex-row gap-8">
+                        <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
                           {/* Main Content Area */}
                           <div className="lg:w-2/3">
                             {filteredPosts.length === 0 ? (
@@ -1367,21 +1614,21 @@ The key is to start simple and gradually add features as your understanding grow
                                 </CardContent>
                               </Card>
                             ) : (
-                              <div className="space-y-6">
+                              <div className="space-y-4 sm:space-y-6">
                                 {filteredPosts.map(post => (
                                   <Card key={post.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
-                                    <div className="p-6">
-                                      <div className="flex items-start justify-between mb-4">
+                                    <div className="p-4 sm:p-6">
+                                      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                                         <div className="flex-1">
-                                          <div className="flex items-center space-x-3 mb-3">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium w-fit ${
                                               post.status === 'published' 
                                                 ? 'bg-green-100 text-green-700 border border-green-200' 
                                                 : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
                                             }`}>
                                               {post.status}
                                             </span>
-                                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                            <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-500">
                                               <div className="flex items-center space-x-1">
                                                 <Calendar className="w-4 h-4" />
                                                 <span>{new Date(post.updatedAt).toLocaleDateString()}</span>
@@ -1395,7 +1642,7 @@ The key is to start simple and gradually add features as your understanding grow
                                             </div>
                                           </div>
                                           
-                                          <h2 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-indigo-600 transition-colors">
+                                          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 group-hover:text-indigo-600 transition-colors">
                                             {post.title}
                                           </h2>
                                           
@@ -1408,7 +1655,7 @@ The key is to start simple and gradually add features as your understanding grow
                                               {post.tags.split(',').slice(0, 3).map(tag => (
                                                 <span 
                                                   key={tag} 
-                                                  className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium border border-indigo-100"
+                                                  className="px-2 sm:px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs sm:text-sm font-medium border border-indigo-100"
                                                 >
                                                   #{tag.trim()}
                                                 </span>
@@ -1418,7 +1665,7 @@ The key is to start simple and gradually add features as your understanding grow
                                         </div>
                                       </div>
                                       
-                                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t border-gray-100 gap-3">
                                         <div className="flex items-center space-x-3">
                                           {currentUser && post.authorId === currentUser.uid && (
                                             <Button

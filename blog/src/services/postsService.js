@@ -7,7 +7,7 @@ import {
   query, 
   orderBy,
   where,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -33,7 +33,16 @@ export const getPosts = async () => {
 // Create a new post
 export const createPost = async (postData, userId, userName) => {
   try {
+    console.log('=== CREATE POST FUNCTION CALLED ===');
     console.log('Creating post with data:', { postData, userId, userName });
+    console.log('User authentication check:', { userId, userName });
+    
+    if (!userId || !userName) {
+      console.error('❌ Authentication check failed');
+      throw new Error('User authentication required');
+    }
+    
+    console.log('✅ Authentication check passed');
     
     const post = {
       ...postData,
@@ -45,14 +54,30 @@ export const createPost = async (postData, userId, userName) => {
       status: postData.status || 'draft'
     };
     
+    // Remove undefined fields that Firestore doesn't accept
+    Object.keys(post).forEach(key => {
+      if (post[key] === undefined) {
+        delete post[key];
+      }
+    });
+    
     console.log('Post object to save:', post);
+    console.log('Attempting to write to Firestore...');
+    console.log('Collection path: posts');
     
     const docRef = await addDoc(collection(db, 'posts'), post);
-    console.log('Post created successfully with ID:', docRef.id);
+    console.log('✅ Post created successfully with ID:', docRef.id);
+    console.log('=== CREATE POST FUNCTION SUCCESS ===');
     
     return { id: docRef.id, ...post };
   } catch (error) {
-    console.error('Error creating post:', error);
+    console.error('❌ Error creating post:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      stack: error.stack
+    });
+    console.error('=== CREATE POST FUNCTION FAILED ===');
     
     // Provide more specific error messages
     let errorMessage = 'Failed to create post';
@@ -62,6 +87,10 @@ export const createPost = async (postData, userId, userName) => {
       errorMessage = 'Firestore is currently unavailable. Please try again.';
     } else if (error.code === 'resource-exhausted') {
       errorMessage = 'Service temporarily unavailable. Please try again later.';
+    } else if (error.code === 'network-error') {
+      errorMessage = 'Network error. Please check your internet connection.';
+    } else if (error.code === 'not-found') {
+      errorMessage = 'Firestore database not found. Please check your Firebase setup.';
     }
     
     throw new Error(errorMessage);
