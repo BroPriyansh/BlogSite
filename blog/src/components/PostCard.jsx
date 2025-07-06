@@ -1,10 +1,13 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { BookOpen, Calendar, User, Edit, Eye } from 'lucide-react';
+import { BookOpen, Calendar, User, Edit, Eye, Trash2 } from 'lucide-react';
 
-const PostCard = ({ post, onView, onEdit, currentUser }) => {
+const PostCard = ({ post, onView, onEdit, onDelete, currentUser }) => {
   const readingTime = Math.ceil(post.content.split(' ').length / 200);
+  
+  // Check if current user is admin
+  const isAdmin = currentUser?.email === 'memuforpc12@gmail.com';
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
@@ -62,26 +65,40 @@ const PostCard = ({ post, onView, onEdit, currentUser }) => {
         
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex items-center space-x-3">
-            {currentUser && post.authorId === currentUser.uid && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(post)}
-                className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
+            {currentUser && (post.authorId === currentUser.uid || isAdmin) && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(post)}
+                  className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  {isAdmin && post.authorId !== currentUser?.uid ? 'Admin Edit' : 'Edit'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDelete(post)}
+                  className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {isAdmin && post.authorId !== currentUser?.uid ? 'Admin Delete' : 'Delete'}
+                </Button>
+              </>
             )}
           </div>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => post.status === 'published' ? onView(post) : (currentUser && post.authorId === currentUser.uid ? onEdit(post) : null)}
-            disabled={post.status !== 'published' && (!currentUser || post.authorId !== currentUser.uid)}
+            onClick={() => {
+              // Allow everyone to read all posts
+              onView(post);
+            }}
+            disabled={false}
             className="group-hover:bg-indigo-50 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-all"
           >
-            {post.status === 'published' ? 'Read Article' : 'Edit'}
+            Read Article
             <BookOpen className="w-4 h-4 ml-2" />
           </Button>
         </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import PostCard from './PostCard';
 
-const PostList = ({ posts, onView, onEdit, currentUser }) => {
+const PostList = ({ posts, onView, onEdit, onDelete, currentUser }) => {
   return (
     <div className="space-y-6">
       {posts.map(post => (
@@ -10,6 +10,7 @@ const PostList = ({ posts, onView, onEdit, currentUser }) => {
           post={post}
           onView={onView}
           onEdit={onEdit}
+          onDelete={onDelete}
           currentUser={currentUser}
         />
       ))}

@@ -4,14 +4,13 @@ import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './components/ui/card';
 import { Label } from './components/ui/label';
-import { Edit, Save, Upload, Clock, Pen, BookOpen, Mail, Twitter, Linkedin, Github, Menu, User, Calendar, Star, LogOut, LogIn, UserPlus } from "lucide-react";
+import { Edit, Save, Upload, Clock, Pen, BookOpen, Mail, Twitter, Linkedin, Github, Menu, User, Calendar, Star, LogOut, LogIn, UserPlus, Trash2 } from "lucide-react";
 import ArticleView from './components/ArticleView';
 import AuthModal from './components/AuthModal';
 import Notification from './components/Notification';
 import { useAuth } from './contexts/AuthContext';
-import { getPosts, createPost, updatePost } from './services/postsService';
-import { addDoc, collection, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
-import { db } from './firebase';
+import { getPosts, createPost, updatePost, deletePost } from './services/postsService';
+
 
 function App() {
 
@@ -32,6 +31,7 @@ function App() {
   const [authMode, setAuthMode] = useState('login');
   const [notification, setNotification] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [deleteConfirmPost, setDeleteConfirmPost] = useState(null);
 
   const { currentUser, logout, loading: authLoading } = useAuth();
 
@@ -122,7 +122,7 @@ Start your React journey today and discover the endless possibilities of modern 
               tags: 'react, javascript, web-development, frontend',
               status: 'published',
               authorId: 'example-user-1',
-              authorName: 'Sarah Johnson',
+              authorName: 'example',
               createdAt: new Date('2024-01-15').getTime(),
               updatedAt: new Date('2024-01-15').getTime()
             },
@@ -206,7 +206,7 @@ The key is to view AI as a powerful ally rather than a threat, and to continuous
               tags: 'ai, automation, web-development, future-tech, no-code',
               status: 'published',
               authorId: 'example-user-2',
-              authorName: 'Michael Chen',
+              authorName: 'example',
               createdAt: new Date('2024-01-20').getTime(),
               updatedAt: new Date('2024-01-20').getTime()
             },
@@ -365,256 +365,9 @@ Start experimenting with CSS Grid today and discover how it can transform your a
               tags: 'css, grid, layout, web-design, responsive',
               status: 'published',
               authorId: 'example-user-3',
-              authorName: 'Emily Rodriguez',
+              authorName: 'example',
               createdAt: new Date('2024-01-25').getTime(),
               updatedAt: new Date('2024-01-25').getTime()
-            },
-            {
-              id: '4',
-              title: 'Building a Blog with Modern JavaScript',
-              content: `Creating a blog with modern JavaScript involves understanding several key concepts and technologies. This guide will walk you through building a complete blog application from scratch.
-
-## Project Setup
-
-First, let's set up our development environment:
-
-\`\`\`bash
-mkdir modern-blog
-cd modern-blog
-npm init -y
-npm install express cors helmet morgan
-\`\`\`
-
-## Backend Architecture
-
-### Express.js Server Setup
-
-\`\`\`javascript
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(helmet());
-app.use(cors());
-app.use(morgan('combined'));
-app.use(express.json());
-
-app.listen(PORT, () => {
-  console.log(\`Server running on port \${PORT}\`);
-});
-\`\`\`
-
-### Database Integration
-
-For this example, we'll use MongoDB with Mongoose:
-
-\`\`\`javascript
-const mongoose = require('mongoose');
-
-const postSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  author: { type: String, required: true },
-  tags: [String],
-  publishedAt: { type: Date, default: Date.now },
-  status: { type: String, enum: ['draft', 'published'], default: 'draft' }
-});
-
-const Post = mongoose.model('Post', postSchema);
-\`\`\`
-
-## API Endpoints
-
-### RESTful Routes
-
-\`\`\`javascript
-// Get all posts
-app.get('/api/posts', async (req, res) => {
-  try {
-    const posts = await Post.find({ status: 'published' })
-      .sort({ publishedAt: -1 });
-    res.json(posts);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Get single post
-app.get('/api/posts/:id', async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (!post) {
-      return res.status(404).json({ error: 'Post not found' });
-    }
-    res.json(post);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Create new post
-app.post('/api/posts', async (req, res) => {
-  try {
-    const post = new Post(req.body);
-    await post.save();
-    res.status(201).json(post);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-\`\`\`
-
-## Frontend Development
-
-### Modern JavaScript Features
-
-ES6+ features make our code more readable and maintainable:
-
-\`\`\`javascript
-// Async/Await for API calls
-const fetchPosts = async () => {
-  try {
-    const response = await fetch('/api/posts');
-    const posts = await response.json();
-    return posts;
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-    return [];
-  }
-};
-
-// Template literals for dynamic content
-const createPostHTML = (post) => {
-  return \`
-    <article class="post">
-      <h2>\${post.title}</h2>
-      <p class="author">By \${post.author}</p>
-      <div class="content">\${post.content}</div>
-      <div class="tags">
-        \${post.tags.map(tag => \`<span class="tag">\${tag}</span>\`).join('')}
-      </div>
-    </article>
-  \`;
-};
-\`\`\`
-
-## Advanced Features
-
-### Search and Filtering
-
-\`\`\`javascript
-const searchPosts = (posts, query) => {
-  return posts.filter(post => 
-    post.title.toLowerCase().includes(query.toLowerCase()) ||
-    post.content.toLowerCase().includes(query.toLowerCase()) ||
-    post.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
-  );
-};
-
-const filterByTag = (posts, tag) => {
-  return posts.filter(post => 
-    post.tags.includes(tag)
-  );
-};
-\`\`\`
-
-### Pagination
-
-\`\`\`javascript
-const paginatePosts = (posts, page = 1, limit = 10) => {
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  
-  return {
-    posts: posts.slice(startIndex, endIndex),
-    totalPages: Math.ceil(posts.length / limit),
-    currentPage: page
-  };
-};
-\`\`\`
-
-## Performance Optimization
-
-### Lazy Loading
-
-\`\`\`javascript
-const lazyLoadImages = () => {
-  const images = document.querySelectorAll('img[data-src]');
-  
-  const imageObserver = new IntersectionObserver((entries, observer) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const img = entry.target;
-        img.src = img.dataset.src;
-        img.classList.remove('lazy');
-        observer.unobserve(img);
-      }
-    });
-  });
-  
-  images.forEach(img => imageObserver.observe(img));
-};
-\`\`\`
-
-### Caching Strategies
-
-\`\`\`javascript
-const cachePosts = (posts) => {
-  localStorage.setItem('blog_posts', JSON.stringify({
-    data: posts,
-    timestamp: Date.now()
-  }));
-};
-
-const getCachedPosts = () => {
-  const cached = localStorage.getItem('blog_posts');
-  if (cached) {
-    const { data, timestamp } = JSON.parse(cached);
-    // Cache for 1 hour
-    if (Date.now() - timestamp < 3600000) {
-      return data;
-    }
-  }
-  return null;
-};
-\`\`\`
-
-## Deployment
-
-### Environment Configuration
-
-\`\`\`javascript
-// config.js
-const config = {
-  development: {
-    database: 'mongodb://localhost:27017/blog_dev',
-    port: 3000
-  },
-  production: {
-    database: process.env.MONGODB_URI,
-    port: process.env.PORT
-  }
-};
-
-module.exports = config[process.env.NODE_ENV || 'development'];
-\`\`\`
-
-## Conclusion
-
-Building a modern blog with JavaScript involves understanding both backend and frontend technologies. By using modern JavaScript features, proper architecture, and performance optimization techniques, you can create a robust and scalable blog application.
-
-The key is to start simple and gradually add features as your understanding grows. Modern JavaScript provides all the tools you need to build sophisticated web applications!`,
-              excerpt: 'Learn how to build a complete blog application using modern JavaScript, from backend setup to frontend development and deployment.',
-              tags: 'javascript, nodejs, express, mongodb, web-development',
-              status: 'draft',
-              authorId: 'example-user-1',
-              authorName: 'Sarah Johnson',
-              createdAt: new Date('2024-01-30').getTime(),
-              updatedAt: new Date('2024-01-30').getTime()
             }
           ];
           
@@ -843,88 +596,47 @@ The key is to start simple and gradually add features as your understanding grow
     }
   };
 
-  // Test Firestore connectivity
-  const testFirestore = async () => {
-    try {
-      console.log('=== Firestore Diagnostic Test ===');
-      console.log('Current user:', currentUser);
-      console.log('Auth state:', currentUser ? 'Authenticated' : 'Not authenticated');
-      
-      if (!currentUser) {
-        setNotification({
-          message: 'Please log in first to test Firestore',
-          type: 'error'
-        });
-        return false;
-      }
-      
-      console.log('Testing Firestore connectivity...');
-      console.log('Firebase config:', {
-        projectId: 'dashboard-c1927',
-        authDomain: 'dashboard-c1927.firebaseapp.com'
-      });
-      
-      // Test 1: Try to write to test collection
-      console.log('Test 1: Writing to test collection...');
-      const testDoc = await addDoc(collection(db, 'test'), {
-        test: true,
-        timestamp: serverTimestamp(),
-        userId: currentUser.uid,
-        userName: currentUser.name
-      });
-      console.log('✅ Test 1 successful:', testDoc.id);
-      
-      // Test 2: Try to write to posts collection
-      console.log('Test 2: Writing to posts collection...');
-      const postDoc = await addDoc(collection(db, 'posts'), {
-        title: 'Test Post',
-        content: 'This is a test post',
-        authorId: currentUser.uid,
-        authorName: currentUser.name,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        status: 'draft'
-      });
-      console.log('✅ Test 2 successful:', postDoc.id);
-      
-      // Clean up test documents
-      console.log('Cleaning up test documents...');
-      await deleteDoc(doc(db, 'test', testDoc.id));
-      await deleteDoc(doc(db, 'posts', postDoc.id));
-      
+  // Check if current user is admin
+  const isAdmin = currentUser?.email === 'memuforpc12@gmail.com';
+
+  const handleDeletePost = async (post) => {
+    if (!currentUser || (post.authorId !== currentUser.uid && !isAdmin)) {
       setNotification({
-        message: 'Firestore connection successful! All tests passed.',
-        type: 'success'
-      });
-      return true;
-    } catch (error) {
-      console.error('❌ Firestore test failed:', error);
-      console.error('Error details:', {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
-      
-      let errorMessage = 'Firestore connection failed';
-      if (error.code === 'permission-denied') {
-        errorMessage = 'Permission denied. Check Firestore security rules.';
-      } else if (error.code === 'unavailable') {
-        errorMessage = 'Firestore service unavailable.';
-      } else if (error.code === 'not-found') {
-        errorMessage = 'Firestore database not found.';
-      } else if (error.code === 'resource-exhausted') {
-        errorMessage = 'Service temporarily unavailable.';
-      } else if (error.code === 'network-error') {
-        errorMessage = 'Network error. Check internet connection.';
-      }
-      
-      setNotification({
-        message: `${errorMessage} (Code: ${error.code})`,
+        message: isAdmin ? 'You can only delete posts as admin.' : 'You can only delete your own posts.',
         type: 'error'
       });
-      return false;
+      return;
+    }
+
+    setDeleteConfirmPost(post);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmPost) return;
+    
+    try {
+      await deletePost(deleteConfirmPost.id);
+      setPosts(posts.filter(p => p.id !== deleteConfirmPost.id));
+      setNotification({
+        message: isAdmin ? 'Post deleted successfully by admin.' : 'Post deleted successfully.',
+        type: 'success'
+      });
+      setDeleteConfirmPost(null);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      setNotification({
+        message: `Failed to delete post: ${error.message}`,
+        type: 'error'
+      });
+      setDeleteConfirmPost(null);
     }
   };
+
+  const cancelDelete = () => {
+    setDeleteConfirmPost(null);
+  };
+
+
 
   const filteredPosts = posts.filter(post => {
     if (filter === 'all') return true;
@@ -942,6 +654,60 @@ The key is to start simple and gradually add features as your understanding grow
           type={notification.type}
           onClose={() => setNotification(null)}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmPost && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+            <div className="text-center">
+              {/* Warning Icon */}
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <Trash2 className="h-8 w-8 text-red-600" />
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {isAdmin && deleteConfirmPost.authorId !== currentUser?.uid ? 'Admin Delete Post' : 'Delete Post'}
+              </h3>
+              
+              {/* Message */}
+              <p className="text-gray-600 mb-6">
+                {isAdmin && deleteConfirmPost.authorId !== currentUser?.uid ? (
+                  <>
+                    Are you sure you want to delete "<span className="font-semibold text-gray-900">{deleteConfirmPost.title}</span>" as admin? 
+                    <br />
+                    <span className="text-sm text-red-600">This action cannot be undone.</span>
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to delete "<span className="font-semibold text-gray-900">{deleteConfirmPost.title}</span>"? 
+                    <br />
+                    <span className="text-sm text-red-600">This action cannot be undone.</span>
+                  </>
+                )}
+              </p>
+              
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  variant="outline"
+                  onClick={cancelDelete}
+                  className="flex-1 py-3 text-gray-700 border-gray-300 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmDelete}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {isAdmin && deleteConfirmPost.authorId !== currentUser?.uid ? 'Admin Delete' : 'Delete Post'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Loading Screen */}
@@ -1022,52 +788,7 @@ The key is to start simple and gradually add features as your understanding grow
                         <LogOut className="w-4 h-4 mr-2" />
                         Logout
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={testFirestore}
-                        className="text-gray-500 hover:text-gray-700"
-                        title="Test Firestore"
-                      >
-                        🔧
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={async () => {
-                          if (!currentUser) {
-                            setNotification({
-                              message: 'Please log in first',
-                              type: 'error'
-                            });
-                            return;
-                          }
-                          try {
-                            console.log('Quick test: Creating simple post...');
-                            const testPost = await createPost({
-                              title: 'Quick Test',
-                              content: 'Testing Firestore connection',
-                              tags: 'test',
-                              status: 'draft'
-                            }, currentUser.uid, currentUser.name);
-                            console.log('Quick test successful:', testPost);
-                            setNotification({
-                              message: 'Quick test successful!',
-                              type: 'success'
-                            });
-                          } catch (error) {
-                            console.error('Quick test failed:', error);
-                            setNotification({
-                              message: `Quick test failed: ${error.message}`,
-                              type: 'error'
-                            });
-                          }
-                        }}
-                        className="text-gray-500 hover:text-gray-700"
-                        title="Quick Test"
-                      >
-                        ⚡
-                      </Button>
+
                     </>
                   ) : (
                     <div className="flex items-center space-x-2">
@@ -1402,6 +1123,7 @@ The key is to start simple and gradually add features as your understanding grow
                 allPosts={posts}
                 onBack={handleBackFromArticle}
                 onViewPost={handleViewPost}
+                currentUser={currentUser}
               />
             )}
 
@@ -1529,66 +1251,70 @@ The key is to start simple and gradually add features as your understanding grow
 
                 {/* Show blog list */}
                 {activeTab === 'list' && (
-                  <section className="py-8 sm:py-12 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
-                    <div className="container mx-auto px-4">
+                  <section className="py-8 sm:py-12 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen relative overflow-hidden">
+                    {/* Background decorative elements */}
+                    <div className="absolute inset-0">
+                      <div className="absolute top-0 left-1/4 w-72 h-72 bg-gradient-to-br from-indigo-200 to-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+                      <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
+                      <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-2000"></div>
+                    </div>
+                    
+                    <div className="container mx-auto px-4 relative z-10">
                       <div className="max-w-7xl mx-auto">
                         {/* Header Section */}
-                        <div className="mb-8 sm:mb-12">
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
-                            <div>
-                              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                                {filter === 'all' ? 'All Posts' : filter === 'drafts' ? 'Drafts' : 'Published Posts'}
-                              </h1>
-                              <p className="text-base sm:text-lg text-gray-600">
-                                {filter === 'all' 
-                                  ? 'Discover articles from our community of writers' 
-                                  : filter === 'drafts' 
-                                    ? 'Your work in progress' 
-                                    : 'Published articles ready to read'
-                                }
-                              </p>
-                            </div>
-                            
-                            {/* Filter Buttons */}
-                            <div className="flex items-center space-x-1 sm:space-x-2 bg-white rounded-xl p-1 shadow-sm border border-gray-200">
-                              <Button 
-                                variant={filter === 'all' ? 'default' : 'ghost'} 
-                                size="sm"
-                                onClick={() => setFilter('all')}
-                                className="rounded-lg text-xs sm:text-sm px-2 sm:px-3"
-                              >
-                                All
-                              </Button>
-                              <Button 
-                                variant={filter === 'drafts' ? 'default' : 'ghost'} 
-                                size="sm"
-                                onClick={() => setFilter('drafts')}
-                                className="rounded-lg text-xs sm:text-sm px-2 sm:px-3"
-                              >
-                                Drafts
-                              </Button>
-                              <Button 
-                                variant={filter === 'published' ? 'default' : 'ghost'} 
-                                size="sm"
-                                onClick={() => setFilter('published')}
-                                className="rounded-lg text-xs sm:text-sm px-2 sm:px-3"
-                              >
-                                Published
-                              </Button>
-                            </div>
+                        <div className="mb-12 sm:mb-16 text-center">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 blur-3xl opacity-20"></div>
+                            <h1 className="relative text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
+                              {filter === 'all' ? 'Explore Our Blog' : filter === 'drafts' ? 'Your Drafts' : 'Published Articles'}
+                            </h1>
                           </div>
+                          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                            {filter === 'all' 
+                              ? 'Discover insightful articles, tutorials, and stories from our community of writers' 
+                              : filter === 'drafts' 
+                                ? 'Your work in progress - continue where you left off' 
+                                : 'Published articles ready to inspire and educate'
+                            }
+                          </p>
+                        </div>
+                        
+                        {/* Filter Buttons */}
+                        <div className="flex flex-wrap justify-center gap-3 mb-12">
+                          {[
+                            { key: 'all', label: 'All Posts', icon: BookOpen },
+                            { key: 'published', label: 'Published', icon: BookOpen },
+                            { key: 'drafts', label: 'Drafts', icon: Pen }
+                          ].map(({ key, label, icon: Icon }) => (
+                            <Button
+                              key={key}
+                              variant={filter === key ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setFilter(key)}
+                              className={`rounded-full px-6 py-3 transition-all duration-300 ${
+                                filter === key 
+                                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg transform scale-105' 
+                                  : 'hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 border-indigo-200 hover:shadow-md'
+                              }`}
+                            >
+                              <Icon className="w-4 h-4 mr-2" />
+                              {label}
+                            </Button>
+                          ))}
                         </div>
 
                         <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
                           {/* Main Content Area */}
                           <div className="lg:w-2/3">
                             {filteredPosts.length === 0 ? (
-                              <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-                                <CardContent className="py-16 text-center">
-                                  <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <BookOpen className="w-10 h-10 text-indigo-600" />
+                              <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden relative">
+                                {/* Gradient background */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-purple-50/50 to-pink-50/50"></div>
+                                <CardContent className="py-20 text-center relative">
+                                  <div className="w-24 h-24 bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
+                                    <BookOpen className="w-12 h-12 text-indigo-600" />
                                   </div>
-                                  <h3 className="text-2xl font-semibold text-gray-900 mb-3">
+                                  <h3 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
                                     {filter === 'all' 
                                       ? 'No posts found' 
                                       : filter === 'drafts' 
@@ -1596,7 +1322,7 @@ The key is to start simple and gradually add features as your understanding grow
                                         : 'No published posts yet'
                                     }
                                   </h3>
-                                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                                  <p className="text-gray-600 mb-10 max-w-md mx-auto text-lg">
                                     {filter === 'all' 
                                       ? 'Create your first post to get started!' 
                                       : filter === 'drafts' 
@@ -1605,7 +1331,7 @@ The key is to start simple and gradually add features as your understanding grow
                                     }
                                   </p>
                                   <Button 
-                                    className="px-8 py-3 text-lg"
+                                    className="px-10 py-4 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg"
                                     onClick={handleNewPost}
                                   >
                                     <Pen className="w-5 h-5 mr-2" />
@@ -1614,17 +1340,19 @@ The key is to start simple and gradually add features as your understanding grow
                                 </CardContent>
                               </Card>
                             ) : (
-                              <div className="space-y-4 sm:space-y-6">
+                              <div className="space-y-6 sm:space-y-8">
                                 {filteredPosts.map(post => (
-                                  <Card key={post.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
-                                    <div className="p-4 sm:p-6">
+                                  <Card key={post.id} className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/90 backdrop-blur-sm overflow-hidden relative">
+                                    {/* Gradient overlay on hover */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                    <div className="relative p-6 sm:p-8">
                                       <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                                         <div className="flex-1">
                                           <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium w-fit ${
+                                            <span className={`px-4 py-2 rounded-full text-xs font-medium w-fit ${
                                               post.status === 'published' 
-                                                ? 'bg-green-100 text-green-700 border border-green-200' 
-                                                : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                                                ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200 shadow-sm' 
+                                                : 'bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 border border-yellow-200 shadow-sm'
                                             }`}>
                                               {post.status}
                                             </span>
@@ -1651,11 +1379,11 @@ The key is to start simple and gradually add features as your understanding grow
                                           </p>
                                           
                                           {post.tags && (
-                                            <div className="flex flex-wrap gap-2 mb-4">
+                                            <div className="flex flex-wrap gap-3 mb-6">
                                               {post.tags.split(',').slice(0, 3).map(tag => (
                                                 <span 
                                                   key={tag} 
-                                                  className="px-2 sm:px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs sm:text-sm font-medium border border-indigo-100"
+                                                  className="px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 rounded-full text-xs sm:text-sm font-medium border border-indigo-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
                                                 >
                                                   #{tag.trim()}
                                                 </span>
@@ -1667,26 +1395,40 @@ The key is to start simple and gradually add features as your understanding grow
                                       
                                       <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t border-gray-100 gap-3">
                                         <div className="flex items-center space-x-3">
-                                          {currentUser && post.authorId === currentUser.uid && (
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() => handleEditPost(post)}
-                                              className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
-                                            >
-                                              <Edit className="w-4 h-4 mr-2" />
-                                              Edit
-                                            </Button>
+                                          {currentUser && (post.authorId === currentUser.uid || isAdmin) && (
+                                            <>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleEditPost(post)}
+                                                className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                                              >
+                                                <Edit className="w-4 h-4 mr-2" />
+                                                {isAdmin && post.authorId !== currentUser.uid ? 'Admin Edit' : 'Edit'}
+                                              </Button>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleDeletePost(post)}
+                                                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                                              >
+                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                {isAdmin && post.authorId !== currentUser.uid ? 'Admin Delete' : 'Delete'}
+                                              </Button>
+                                            </>
                                           )}
                                         </div>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          onClick={() => post.status === 'published' ? handleViewPost(post) : (currentUser && post.authorId === currentUser.uid ? handleEditPost(post) : null)}
-                                          disabled={post.status !== 'published' && (!currentUser || post.authorId !== currentUser.uid)}
+                                          onClick={() => {
+                                            // Allow everyone to read all posts
+                                            handleViewPost(post);
+                                          }}
+                                          disabled={false}
                                           className="group-hover:bg-indigo-50 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-all"
                                         >
-                                          {post.status === 'published' ? 'Read Article' : 'Edit'}
+                                          Read Article
                                           <BookOpen className="w-4 h-4 ml-2" />
                                         </Button>
                                       </div>
@@ -1698,8 +1440,11 @@ The key is to start simple and gradually add features as your understanding grow
                           </div>
 
                           {/* Sidebar */}
-                          <div className="lg:w-1/3 space-y-6">
-                            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                          <div className="lg:w-1/3 space-y-8">
+                            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden relative">
+                              {/* Gradient background */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-purple-50/50"></div>
+                              <div className="relative">
                               <CardHeader className="pb-4">
                                 <CardTitle className="text-xl flex items-center space-x-2">
                                   <Pen className="w-5 h-5 text-indigo-600" />
@@ -1711,81 +1456,90 @@ The key is to start simple and gradually add features as your understanding grow
                                   Share your knowledge and insights with our community. Start writing your next great article.
                                 </p>
                                 <Button 
-                                  className="w-full py-3 text-lg"
+                                  className="w-full py-3 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                                   onClick={handleNewPost}
                                 >
                                   <Pen className="w-5 h-5 mr-2" />
                                   New Post
                                 </Button>
                               </CardContent>
+                              </div>
                             </Card>
 
                             {publishedPosts.length > 0 && (
-                              <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-                                <CardHeader className="pb-4">
-                                  <CardTitle className="text-xl flex items-center space-x-2">
-                                    <BookOpen className="w-5 h-5 text-indigo-600" />
-                                    <span>Popular Tags</span>
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="flex flex-wrap gap-2">
-                                    {Array.from(
-                                      new Set(
-                                        publishedPosts
-                                          .flatMap(post => post.tags?.split(',') || [])
-                                          .map(tag => tag.trim())
-                                          .filter(tag => tag)
+                              <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden relative">
+                                {/* Gradient background */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-pink-50/50"></div>
+                                <div className="relative">
+                                  <CardHeader className="pb-4">
+                                    <CardTitle className="text-xl flex items-center space-x-2">
+                                      <BookOpen className="w-5 h-5 text-purple-600" />
+                                      <span>Popular Tags</span>
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="flex flex-wrap gap-2">
+                                      {Array.from(
+                                        new Set(
+                                          publishedPosts
+                                            .flatMap(post => post.tags?.split(',') || [])
+                                            .map(tag => tag.trim())
+                                            .filter(tag => tag)
+                                        )
                                       )
-                                    )
-                                      .slice(0, 10)
-                                      .map(tag => (
-                                        <Button 
-                                          key={tag} 
-                                          variant="outline" 
-                                          size="sm"
-                                          className="rounded-full hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all"
-                                          onClick={() => {
-                                            setFilter('all');
-                                            // Filter posts by tag click
-                                            const tagFilteredPosts = posts.filter(post =>
-                                              post.tags?.split(',').map(t => t.trim()).includes(tag)
-                                            );
-                                            setPosts(tagFilteredPosts);
-                                          }}
-                                        >
-                                          #{tag}
-                                        </Button>
-                                      ))}
-                                  </div>
-                                </CardContent>
+                                        .slice(0, 10)
+                                        .map(tag => (
+                                          <Button 
+                                            key={tag} 
+                                            variant="outline" 
+                                            size="sm"
+                                            className="rounded-full hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 hover:border-purple-200 transition-all duration-300"
+                                            onClick={() => {
+                                              setFilter('all');
+                                              // Filter posts by tag click
+                                              const tagFilteredPosts = posts.filter(post =>
+                                                post.tags?.split(',').map(t => t.trim()).includes(tag)
+                                              );
+                                              setPosts(tagFilteredPosts);
+                                            }}
+                                          >
+                                            #{tag}
+                                          </Button>
+                                        ))}
+                                    </div>
+                                  </CardContent>
+                                </div>
                               </Card>
                             )}
 
                             {/* Stats Card */}
-                            <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-                              <CardHeader className="pb-4">
-                                <CardTitle className="text-xl flex items-center space-x-2">
-                                  <BookOpen className="w-5 h-5 text-indigo-600" />
-                                  <span>Blog Stats</span>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <div className="space-y-4">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Total Posts</span>
-                                    <span className="font-semibold text-gray-900">{posts.length}</span>
+                            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden relative">
+                              {/* Gradient background */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50"></div>
+                              <div className="relative">
+                                <CardHeader className="pb-4">
+                                  <CardTitle className="text-xl flex items-center space-x-2">
+                                    <BookOpen className="w-5 h-5 text-blue-600" />
+                                    <span>Blog Stats</span>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-4">
+                                    <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                                      <span className="text-gray-700 font-medium">Total Posts</span>
+                                      <span className="font-bold text-blue-600 text-lg">{posts.length}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                                      <span className="text-gray-700 font-medium">Published</span>
+                                      <span className="font-bold text-green-600 text-lg">{posts.filter(p => p.status === 'published').length}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg">
+                                      <span className="text-gray-700 font-medium">Drafts</span>
+                                      <span className="font-bold text-yellow-600 text-lg">{posts.filter(p => p.status === 'draft').length}</span>
+                                    </div>
                                   </div>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Published</span>
-                                    <span className="font-semibold text-green-600">{posts.filter(p => p.status === 'published').length}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Drafts</span>
-                                    <span className="font-semibold text-yellow-600">{posts.filter(p => p.status === 'draft').length}</span>
-                                  </div>
-                                </div>
-                              </CardContent>
+                                </CardContent>
+                              </div>
                             </Card>
                           </div>
                         </div>
