@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { BookOpen, Calendar, User, Edit, Eye, Trash2 } from 'lucide-react';
+import { formatDateOnly } from '../utils/dateUtils';
 
 const PostCard = ({ post, onView, onEdit, onDelete, currentUser }) => {
   const readingTime = Math.ceil(post.content.split(' ').length / 200);
@@ -25,7 +26,7 @@ const PostCard = ({ post, onView, onEdit, onDelete, currentUser }) => {
               <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <div className="flex items-center space-x-1">
                   <Calendar className="w-4 h-4" />
-                  <span>{new Date(post.updatedAt).toLocaleDateString()}</span>
+                  <span>{formatDateOnly(post.updatedAt) || 'Recently'}</span>
                 </div>
                 {post.authorName && (
                   <div className="flex items-center space-x-1">

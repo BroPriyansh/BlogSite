@@ -8,8 +8,10 @@ import { Edit, Save, Upload, Clock, Pen, BookOpen, Mail, Twitter, Linkedin, Gith
 import ArticleView from './components/ArticleView';
 import AuthModal from './components/AuthModal';
 import Notification from './components/Notification';
+import Editor from './components/Editor';
 import { useAuth } from './contexts/AuthContext';
-import { getPosts, createPost, updatePost, deletePost } from './services/postsService';
+import { getPosts, createPost, updatePost, deletePost, likePost, getLikeCount, checkUserLike, addComment, getComments, deleteComment } from './services/postsService';
+import { formatDateOnly } from './utils/dateUtils';
 
 
 function App() {
@@ -20,6 +22,7 @@ function App() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
@@ -505,13 +508,27 @@ Start experimenting with CSS Grid today and discover how it can transform your a
     
     const inactivityTimer = setTimeout(() => {
       if (title || content) {
-        handleSaveDraft();
+        savePost({
+          id: currentPost?.id,
+          title,
+          content,
+          tags,
+          imageUrl,
+          status: 'draft'
+        });
       }
     }, 5000);
     
     const intervalTimer = setInterval(() => {
       if (title || content) {
-        handleSaveDraft();
+        savePost({
+          id: currentPost?.id,
+          title,
+          content,
+          tags,
+          imageUrl,
+          status: 'draft'
+        });
       }
     }, 30000);
     
@@ -519,7 +536,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
       clearTimeout(inactivityTimer);
       clearInterval(intervalTimer);
     };
-  }, [title, content, tags]);
+  }, [title, content, tags, imageUrl, currentPost, savePost]);
 
   const handleSaveDraft = async () => {
     if (!title && !content) return;
@@ -529,6 +546,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
       title,
       content,
       tags,
+      imageUrl,
       status: 'draft'
     });
   };
@@ -541,6 +559,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
       title,
       content,
       tags,
+      imageUrl,
       status: 'published',
       excerpt: content.substring(0, 100) + '...'
     });
@@ -549,6 +568,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
     setTitle('');
     setContent('');
     setTags('');
+    setImageUrl('');
   };
 
   const handleEditPost = (post) => {
@@ -556,6 +576,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
     setTitle(post.title);
     setContent(post.content);
     setTags(post.tags);
+    setImageUrl(post.imageUrl || '');
     setActiveTab('editor');
   };
 
@@ -585,6 +606,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
     setTitle('');
     setContent('');
     setTags('');
+    setImageUrl('');
   };
 
   const handleSubscribe = (e) => {
@@ -1010,7 +1032,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                           <p className="text-gray-600 mb-4">{post.excerpt}</p>
                           <div className="flex items-center text-sm text-gray-500">
                             <Calendar className="w-4 h-4 mr-1" />
-                            <span>{new Date(post.updatedAt).toLocaleDateString()}</span>
+                            <span>{formatDateOnly(post.updatedAt) || 'Recently'}</span>
                           </div>
                         </CardContent>
                         <CardFooter>
@@ -1177,76 +1199,21 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                 
                 {/* Show editor only if user is logged in */}
                 {activeTab === 'editor' && currentUser && (
-                  <section className="py-8 sm:py-12 bg-gray-50">
-                    <div className="container mx-auto px-4">
-                      <div className="max-w-4xl mx-auto">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                              <span>{currentPost ? 'Edit Post' : 'New Post'}</span>
-                              {lastSaved && (
-                                <div className="flex items-center text-sm text-muted-foreground">
-                                  <Clock className="w-4 h-4 mr-1" />
-                                  Saved {new Date(lastSaved).toLocaleTimeString()}
-                                </div>
-                              )}
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="title">Title</Label>
-                              <Input
-                                id="title"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Enter your blog title"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="content">Content</Label>
-                              <Textarea
-                                id="content"
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                placeholder="Write your blog content here..."
-                                className="min-h-[200px]"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="tags">Tags (comma separated)</Label>
-                              <Input
-                                id="tags"
-                                value={tags}
-                                onChange={(e) => setTags(e.target.value)}
-                                placeholder="technology, programming, react"
-                              />
-                            </div>
-                          </CardContent>
-                          <CardFooter className="flex flex-col sm:flex-row justify-between gap-3">
-                            <Button
-                              variant="outline"
-                              onClick={handleSaveDraft}
-                              disabled={isSaving || (!title && !content)}
-                              className="w-full sm:w-auto"
-                            >
-                              <Save className="w-4 h-4 mr-2" />
-                              {isSaving ? 'Saving...' : 'Save Draft'}
-                            </Button>
-                            <Button
-                              onClick={handlePublish}
-                              disabled={isSaving || !title || !content}
-                              className="w-full sm:w-auto"
-                            >
-                              <Upload className="w-4 h-4 mr-2" />
-                              {isSaving ? 'Publishing...' : 'Publish'}
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      </div>
-                    </div>
-                  </section>
+                  <Editor
+                    currentPost={currentPost}
+                    isSaving={isSaving}
+                    lastSaved={lastSaved}
+                    title={title}
+                    content={content}
+                    tags={tags}
+                    imageUrl={imageUrl}
+                    setTitle={setTitle}
+                    setContent={setContent}
+                    setTags={setTags}
+                    setImageUrl={setImageUrl}
+                    handleSaveDraft={handleSaveDraft}
+                    handlePublish={handlePublish}
+                  />
                 )}
 
                 {/* Show blog list */}
@@ -1359,7 +1326,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                                             <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-500">
                                               <div className="flex items-center space-x-1">
                                                 <Calendar className="w-4 h-4" />
-                                                <span>{new Date(post.updatedAt).toLocaleDateString()}</span>
+                                                <span>{formatDateOnly(post.updatedAt) || 'Recently'}</span>
                                               </div>
                                               {post.authorName && (
                                                 <div className="flex items-center space-x-1">

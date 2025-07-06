@@ -27,23 +27,23 @@ const Notification = ({ message, type = 'success', duration = 3000, onClose }) =
   const Icon = type === 'success' ? CheckCircle : XCircle;
 
   return (
-    <div className={`fixed top-4 right-4 z-50 max-w-xs sm:max-w-sm w-full ${bgColor} border ${borderColor} rounded-lg shadow-lg transition-all duration-300 transform ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
-      <div className="p-3 sm:p-4">
-        <div className="flex items-start">
+    <div className={`fixed top-20 sm:top-24 md:top-28 right-4 left-4 sm:left-auto z-50 max-w-xs sm:max-w-sm w-auto ${bgColor} border ${borderColor} rounded-xl shadow-xl transition-all duration-300 transform ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-2 opacity-0 scale-95'}`}>
+      <div className="p-4 sm:p-5">
+        <div className="flex items-start gap-3">
           <div className="flex-shrink-0">
-            <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`} />
+            <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${iconColor}`} />
           </div>
-          <div className="ml-2 sm:ml-3 flex-1">
-            <p className={`text-xs sm:text-sm font-medium ${textColor}`}>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm sm:text-base font-medium ${textColor} leading-relaxed`}>
               {message}
             </p>
           </div>
-          <div className="ml-2 sm:ml-4 flex-shrink-0">
+          <div className="flex-shrink-0">
             <button
               onClick={handleClose}
-              className={`inline-flex ${textColor} hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2 ${type === 'success' ? 'focus:ring-green-500' : 'focus:ring-red-500'}`}
+              className={`inline-flex items-center justify-center p-1 rounded-full ${textColor} hover:bg-opacity-10 hover:bg-current focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 ${type === 'success' ? 'focus:ring-green-500' : 'focus:ring-red-500'}`}
             >
-              <X className="h-3 w-3 sm:h-4 sm:w-4" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
         </div>
