@@ -23,59 +23,99 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen for auth state changes
+  // Listen for auth state changes with improved error handling
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('=== AUTH STATE CHANGED ===');
-      console.log('Firebase User:', user);
-      
-      if (user) {
-        // Get additional user data from Firestore
-        try {
-          console.log('Fetching user data from Firestore for UID:', user.uid);
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          console.log('User document exists:', userDoc.exists());
-          
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            console.log('User data from Firestore:', userData);
-            setCurrentUser({
-              uid: user.uid,
-              email: user.email,
-              name: userData.name,
-              avatar: userData.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
-              createdAt: userData.createdAt
-            });
-          } else {
-            console.log('User document not found, using fallback data');
-            // Fallback to basic user info
-            setCurrentUser({
-              uid: user.uid,
-              email: user.email,
-              name: user.displayName || user.email?.split('@')[0],
-              avatar: user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
-              createdAt: user.metadata.creationTime
-            });
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          setCurrentUser({
-            uid: user.uid,
-            email: user.email,
-            name: user.displayName || user.email?.split('@')[0],
-            avatar: user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
-            createdAt: user.metadata.creationTime
-          });
-        }
-      } else {
-        console.log('No user authenticated');
-        setCurrentUser(null);
-      }
-      setLoading(false);
-      console.log('=== END AUTH STATE CHANGED ===');
-    });
+    let unsubscribe;
+    let retryCount = 0;
+    const maxRetries = 3;
 
-    return unsubscribe;
+    const setupAuthListener = () => {
+      try {
+        console.log('=== SETTING UP AUTH LISTENER ===');
+        unsubscribe = onAuthStateChanged(auth, async (user) => {
+          try {
+            console.log('=== AUTH STATE CHANGED ===');
+            console.log('Firebase User:', user);
+            
+            if (user) {
+              // Get additional user data from Firestore
+              try {
+                console.log('Fetching user data from Firestore for UID:', user.uid);
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                console.log('User document exists:', userDoc.exists());
+                
+                if (userDoc.exists()) {
+                  const userData = userDoc.data();
+                  console.log('User data from Firestore:', userData);
+                  setCurrentUser({
+                    uid: user.uid,
+                    email: user.email,
+                    name: userData.name,
+                    avatar: userData.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
+                    createdAt: userData.createdAt
+                  });
+                } else {
+                  console.log('User document not found, using fallback data');
+                  // Fallback to basic user info
+                  setCurrentUser({
+                    uid: user.uid,
+                    email: user.email,
+                    name: user.displayName || user.email?.split('@')[0],
+                    avatar: user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
+                    createdAt: user.metadata.creationTime
+                  });
+                }
+              } catch (error) {
+                console.error('Error fetching user data:', error);
+                setCurrentUser({
+                  uid: user.uid,
+                  email: user.email,
+                  name: user.displayName || user.email?.split('@')[0],
+                  avatar: user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
+                  createdAt: user.metadata.creationTime
+                });
+              }
+            } else {
+              console.log('No user authenticated');
+              setCurrentUser(null);
+            }
+            setLoading(false);
+            retryCount = 0; // Reset retry count on successful connection
+            console.log('=== END AUTH STATE CHANGED ===');
+          } catch (error) {
+            console.error('Error in auth state change handler:', error);
+            setLoading(false);
+          }
+        }, (error) => {
+          console.error('Auth state change error:', error);
+          setLoading(false);
+          
+          // Retry connection if it's a network error
+          if (retryCount < maxRetries && (error.code === 'network-error' || error.code === 'unavailable')) {
+            retryCount++;
+            console.log(`Retrying auth connection (${retryCount}/${maxRetries})...`);
+            setTimeout(() => {
+              if (unsubscribe) {
+                unsubscribe();
+              }
+              setupAuthListener();
+            }, 2000 * retryCount); // Exponential backoff
+          }
+        });
+      } catch (error) {
+        console.error('Error setting up auth listener:', error);
+        setLoading(false);
+      }
+    };
+
+    setupAuthListener();
+
+    return () => {
+      if (unsubscribe) {
+        console.log('Cleaning up auth listener...');
+        unsubscribe();
+      }
+    };
   }, []);
 
   const register = async (email, password, name) => {

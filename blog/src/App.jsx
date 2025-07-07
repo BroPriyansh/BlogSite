@@ -4,7 +4,7 @@ import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './components/ui/card';
 import { Label } from './components/ui/label';
-import { Edit, Save, Upload, Clock, Pen, BookOpen, Mail, Twitter, Linkedin, Github, Menu, User, Calendar, Star, LogOut, LogIn, UserPlus, Trash2 } from "lucide-react";
+import { Edit, Save, Upload, Clock, Pen, BookOpen, Mail, Instagram, Linkedin, Github, Menu, User, Calendar, Star, LogOut, LogIn, UserPlus, Trash2, Users, Phone, MapPin } from "lucide-react";
 import ArticleView from './components/ArticleView';
 import AuthModal from './components/AuthModal';
 import Notification from './components/Notification';
@@ -12,6 +12,7 @@ import Editor from './components/Editor';
 import { useAuth } from './contexts/AuthContext';
 import { getPosts, createPost, updatePost, deletePost } from './services/postsService';
 import { formatDateOnly } from './utils/dateUtils';
+import WriteMindLogo from './WriteMind.png';
 
 
 function App() {
@@ -36,356 +37,15 @@ function App() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [deleteConfirmPost, setDeleteConfirmPost] = useState(null);
 
+
   const { currentUser, logout, loading: authLoading } = useAuth();
 
-  // Initialize with example posts
+  // Load posts without auto-creating example posts
   useEffect(() => {
     const loadPosts = async () => {
       try {
         const postsData = await getPosts();
-        if (postsData.length === 0) {
-          // Add example posts if no posts exist
-          const examplePosts = [
-            {
-              id: '1',
-              title: 'Getting Started with React Development',
-              content: `React has revolutionized the way we build user interfaces. In this comprehensive guide, we'll explore the fundamentals of React development, from setting up your first project to building complex applications.
-
-## What is React?
-
-React is a JavaScript library for building user interfaces, particularly single-page applications. It's used for handling the view layer and can be used for developing both web and mobile applications.
-
-## Key Features
-
-- **Component-Based**: React applications are built using reusable components
-- **Virtual DOM**: React uses a virtual DOM for efficient rendering
-- **JSX**: A syntax extension that allows you to write HTML-like code in JavaScript
-- **Unidirectional Data Flow**: Data flows down from parent to child components
-
-## Setting Up Your First React Project
-
-To get started with React, you can use Create React App:
-
-\`\`\`bash
-npx create-react-app my-app
-cd my-app
-npm start
-\`\`\`
-
-This will create a new React project with all the necessary dependencies and start the development server.
-
-## Understanding Components
-
-Components are the building blocks of React applications. Here's a simple example:
-
-\`\`\`jsx
-function Welcome(props) {
-  return <h1>Hello, {props.name}!</h1>;
-}
-\`\`\`
-
-## State and Props
-
-Props are used to pass data from parent to child components, while state is used for data that can change over time within a component.
-
-\`\`\`jsx
-class Counter extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { count: 0 };
-  }
-  
-  render() {
-    return (
-      <div>
-        <p>Count: {this.state.count}</p>
-        <button onClick={() => this.setState({ count: this.state.count + 1 })}>
-          Increment
-        </button>
-      </div>
-    );
-  }
-}
-\`\`\`
-
-## Best Practices
-
-1. **Keep components small and focused**
-2. **Use functional components with hooks when possible**
-3. **Implement proper error boundaries**
-4. **Optimize performance with React.memo and useMemo**
-5. **Follow consistent naming conventions**
-
-## Conclusion
-
-React provides a powerful and flexible way to build modern web applications. By understanding its core concepts and following best practices, you can create maintainable and scalable applications.
-
-Start your React journey today and discover the endless possibilities of modern web development!`,
-              excerpt: 'Learn the fundamentals of React development, from setting up your first project to building complex applications with best practices.',
-              tags: 'react, javascript, web-development, frontend',
-              status: 'published',
-              authorId: 'example-user-1',
-              authorName: 'example',
-              createdAt: new Date('2024-01-15').getTime(),
-              updatedAt: new Date('2024-01-15').getTime()
-            },
-            {
-              id: '2',
-              title: 'The Future of Web Development: AI and Automation',
-              content: `The landscape of web development is rapidly evolving with the integration of artificial intelligence and automation tools. This transformation is reshaping how we build, deploy, and maintain web applications.
-
-## AI-Powered Development Tools
-
-Modern development environments are becoming increasingly intelligent. AI-powered code completion, automated testing, and intelligent debugging are just the beginning of what's possible.
-
-### Code Generation and Completion
-
-Tools like GitHub Copilot and similar AI assistants are revolutionizing how developers write code. These tools can:
-- Suggest complete functions based on comments
-- Generate boilerplate code automatically
-- Provide context-aware code completions
-- Help with documentation and testing
-
-### Automated Testing and Quality Assurance
-
-AI is making testing more efficient and comprehensive:
-- Automated test case generation
-- Intelligent bug detection and reporting
-- Performance optimization suggestions
-- Security vulnerability scanning
-
-## The Rise of No-Code and Low-Code Platforms
-
-No-code and low-code platforms are democratizing web development, allowing non-technical users to create sophisticated applications.
-
-### Benefits of No-Code Platforms
-
-1. **Faster Development**: Rapid prototyping and deployment
-2. **Reduced Costs**: Lower development and maintenance costs
-3. **Accessibility**: Enables more people to create digital solutions
-4. **Integration**: Easy connection with existing systems
-
-### Popular Platforms
-
-- **Webflow**: For design-focused websites
-- **Bubble**: For complex web applications
-- **Airtable**: For database-driven applications
-- **Zapier**: For workflow automation
-
-## The Impact on Traditional Development
-
-While AI and automation are transforming the industry, traditional development skills remain valuable:
-
-### What's Changing
-
-- **Routine tasks** are being automated
-- **Code generation** is becoming more intelligent
-- **Testing and deployment** are increasingly automated
-- **Documentation** is being generated automatically
-
-### What Remains Important
-
-- **Problem-solving skills** are still crucial
-- **System design** and architecture knowledge
-- **Understanding of fundamentals** (algorithms, data structures)
-- **Creativity** and innovation in solution design
-
-## Preparing for the Future
-
-To stay relevant in this evolving landscape, developers should:
-
-1. **Embrace AI tools** and learn to work with them effectively
-2. **Focus on high-level skills** like system design and problem-solving
-3. **Stay updated** with emerging technologies and trends
-4. **Develop soft skills** like communication and collaboration
-5. **Learn to integrate** AI tools into existing workflows
-
-## Conclusion
-
-The future of web development is not about replacing developers, but about augmenting their capabilities. The most successful developers will be those who can effectively leverage AI tools while maintaining strong fundamental skills and creative problem-solving abilities.
-
-The key is to view AI as a powerful ally rather than a threat, and to continuously adapt and learn in this rapidly changing field.`,
-              excerpt: 'Explore how AI and automation are transforming web development, from code generation to no-code platforms, and what this means for developers.',
-              tags: 'ai, automation, web-development, future-tech, no-code',
-              status: 'published',
-              authorId: 'example-user-2',
-              authorName: 'example',
-              createdAt: new Date('2024-01-20').getTime(),
-              updatedAt: new Date('2024-01-20').getTime()
-            },
-            {
-              id: '3',
-              title: 'Mastering CSS Grid: A Complete Guide',
-              content: `CSS Grid is one of the most powerful layout systems available in modern web development. It provides a two-dimensional layout system that gives you complete control over both rows and columns.
-
-## Understanding CSS Grid Basics
-
-CSS Grid Layout is a two-dimensional layout system designed for the web. It lets you lay out items in rows and columns, and has many features that make building complex layouts straightforward.
-
-### Grid Container and Grid Items
-
-To use CSS Grid, you need to define a grid container and grid items:
-
-\`\`\`css
-.grid-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 100px 200px;
-  gap: 20px;
-}
-\`\`\`
-
-### Grid Lines and Grid Tracks
-
-Grid lines are the horizontal and vertical dividing lines of the grid. Grid tracks are the spaces between grid lines.
-
-## Essential Grid Properties
-
-### Grid Template Columns and Rows
-
-\`\`\`css
-.grid {
-  display: grid;
-  grid-template-columns: 200px 1fr 2fr;
-  grid-template-rows: 100px auto 200px;
-}
-\`\`\`
-
-### The Fr Unit
-
-The fr unit represents a fraction of the available space in the grid container:
-
-\`\`\`css
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-}
-\`\`\`
-
-### Grid Gap
-
-The gap property creates space between grid items:
-
-\`\`\`css
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 20px;
-  /* or */
-  row-gap: 20px;
-  column-gap: 30px;
-}
-\`\`\`
-
-## Advanced Grid Techniques
-
-### Grid Areas
-
-Grid areas allow you to create named areas in your grid:
-
-\`\`\`css
-.grid {
-  display: grid;
-  grid-template-areas:
-    "header header header"
-    "sidebar main main"
-    "footer footer footer";
-}
-
-.header { grid-area: header; }
-.sidebar { grid-area: sidebar; }
-.main { grid-area: main; }
-.footer { grid-area: footer; }
-\`\`\`
-
-### Responsive Grids
-
-CSS Grid makes responsive design much easier:
-
-\`\`\`css
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-\`\`\`
-
-## Practical Examples
-
-### Card Layout
-
-\`\`\`css
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-  padding: 20px;
-}
-\`\`\`
-
-### Holy Grail Layout
-
-\`\`\`css
-.holy-grail {
-  display: grid;
-  grid-template-areas:
-    "header header header"
-    "nav main aside"
-    "footer footer footer";
-  grid-template-columns: 200px 1fr 200px;
-  grid-template-rows: 60px 1fr 60px;
-  min-height: 100vh;
-}
-\`\`\`
-
-## Browser Support and Fallbacks
-
-CSS Grid is supported in all modern browsers. For older browsers, you can use feature queries:
-
-\`\`\`css
-@supports (display: grid) {
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-}
-\`\`\`
-
-## Best Practices
-
-1. **Start simple**: Begin with basic grid layouts
-2. **Use meaningful names**: Name your grid areas descriptively
-3. **Consider accessibility**: Ensure your grid layout works with screen readers
-4. **Test responsiveness**: Always test on different screen sizes
-5. **Use the fr unit**: It's perfect for flexible layouts
-
-## Conclusion
-
-CSS Grid is a powerful tool that can simplify complex layouts and make responsive design more intuitive. By mastering its concepts and techniques, you can create sophisticated layouts that were previously difficult or impossible to achieve.
-
-Start experimenting with CSS Grid today and discover how it can transform your approach to web layout!`,
-              excerpt: 'Learn how to use CSS Grid to create sophisticated layouts with this comprehensive guide covering everything from basics to advanced techniques.',
-              tags: 'css, grid, layout, web-design, responsive',
-              status: 'published',
-              authorId: 'example-user-3',
-              authorName: 'example',
-              createdAt: new Date('2024-01-25').getTime(),
-              updatedAt: new Date('2024-01-25').getTime()
-            }
-          ];
-          
-          // Add example posts to Firestore
-          for (const post of examplePosts) {
-            const { title, content, tags, status } = post;
-            await createPost({ title, content, tags, status }, 'example-user', 'Example Author');
-          }
-          
-          // Load posts after adding examples
-          const updatedPosts = await getPosts();
-          setPosts(updatedPosts);
-        } else {
-          setPosts(postsData);
-        }
+        setPosts(postsData);
       } catch (error) {
         console.error('Error loading posts:', error);
       }
@@ -397,6 +57,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
   const savePost = useCallback(async (post) => {
     console.log('=== SAVE POST FUNCTION CALLED ===');
     console.log('Post data:', post);
+    console.log('Image URL in post:', post.imageUrl ? 'Present' : 'Missing');
     
     if (!currentUser) {
       console.error('❌ No current user');
@@ -503,41 +164,67 @@ Start experimenting with CSS Grid today and discover how it can transform your a
     }
   }, [posts, currentUser]);
 
-  // Auto-save functionality
+  // No auto-save functionality - only save when user leaves or manually saves
+
+  // Handle page unload - save draft when user leaves
   useEffect(() => {
-    if (!title && !content) return;
-    
-    const inactivityTimer = setTimeout(() => {
+    const handleBeforeUnload = (e) => {
       if (title || content) {
-        savePost({
+        // Show confirmation dialog
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        
+        // Save draft to localStorage as fallback
+        const postData = {
           id: currentPost?.id,
           title,
           content,
           tags,
           imageUrl,
           status: 'draft'
-        });
+        };
+        localStorage.setItem('unsavedDraft', JSON.stringify({
+          ...postData,
+          timestamp: Date.now()
+        }));
+        
+        return e.returnValue;
       }
-    }, 5000);
-    
-    const intervalTimer = setInterval(() => {
-      if (title || content) {
-        savePost({
-          id: currentPost?.id,
-          title,
-          content,
-          tags,
-          imageUrl,
-          status: 'draft'
-        });
-      }
-    }, 30000);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
-      clearTimeout(inactivityTimer);
-      clearInterval(intervalTimer);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [title, content, tags, imageUrl, currentPost, savePost]);
+  }, [title, content, tags, imageUrl, currentPost]);
+
+  // Check for unsaved draft on component mount
+  useEffect(() => {
+    const unsavedDraft = localStorage.getItem('unsavedDraft');
+    if (unsavedDraft && currentUser) {
+      try {
+        const draft = JSON.parse(unsavedDraft);
+        const draftAge = Date.now() - draft.timestamp;
+        
+        // Only restore draft if it's less than 24 hours old
+        if (draftAge < 24 * 60 * 60 * 1000) {
+          setTitle(draft.title || '');
+          setContent(draft.content || '');
+          setTags(draft.tags || '');
+          setImageUrl(draft.imageUrl || '');
+          // Don't automatically redirect to editor - let user stay on current page
+          // setActiveTab('editor');
+        }
+        
+        // Clear the stored draft
+        localStorage.removeItem('unsavedDraft');
+      } catch (error) {
+        console.error('Error restoring draft:', error);
+        localStorage.removeItem('unsavedDraft');
+      }
+    }
+  }, [currentUser]);
 
   const handleSaveDraft = async () => {
     if (!title && !content) return;
@@ -674,11 +361,25 @@ Start experimenting with CSS Grid today and discover how it can transform your a
 
 
   const filteredPosts = posts.filter(post => {
-    if (filter === 'all') return true;
+    if (filter === 'all') {
+      // Show only published posts in "All Posts" view
+      return post.status === 'published';
+    }
+    
+    if (filter === 'drafts') {
+      // Only show drafts to their creators
+      return post.status === 'draft' && currentUser && post.authorId === currentUser.uid;
+    }
+    
+    if (filter === 'published') {
+      // Only show published posts by the current user
+      return post.status === 'published' && currentUser && post.authorId === currentUser.uid;
+    }
+    
     return post.status === filter;
   });
 
-  const featuredPosts = posts.filter(post => post.featured);
+
   const publishedPosts = posts.filter(post => post.status === 'published');
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -761,30 +462,43 @@ Start experimenting with CSS Grid today and discover how it can transform your a
         <>
           {/* Header */}
           <header className="bg-white shadow-sm sticky top-0 z-50">
-            <div className="container mx-auto px-4 py-3 sm:py-4">
+            <div className="container mx-auto px-4 py-2 sm:py-3">
               <div className="flex justify-between items-center">
                 {/* Logo */}
                 <div className="flex items-center space-x-2">
-                  <Pen className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-                  <span className="text-lg sm:text-xl font-bold text-gray-900">WriteMind</span>
+                  <img 
+                    src={WriteMindLogo} 
+                    alt="WriteMind Logo" 
+                    className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 object-contain"
+                  />
                 </div>
                 
                 {/* Desktop Navigation */}
                 <nav className="hidden lg:flex space-x-8">
                   <button 
                     onClick={() => setActiveTab('home')}
-                    className={`${activeTab === 'home' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-medium transition-colors`}
+                    className={`${activeTab === 'home' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-semibold text-base transition-colors py-1 px-2 rounded-lg hover:bg-indigo-50`}
                   >
                     Home
                   </button>
                   <button 
                     onClick={() => setActiveTab('list')}
-                    className={`${activeTab === 'list' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-medium transition-colors`}
+                    className={`${activeTab === 'list' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-semibold text-base transition-colors py-1 px-2 rounded-lg hover:bg-indigo-50`}
                   >
                     Blog
                   </button>
-                  <a href="#about" className="text-gray-500 hover:text-indigo-600 font-medium transition-colors">About</a>
-                  <a href="#contact" className="text-gray-500 hover:text-indigo-600 font-medium transition-colors">Contact</a>
+                  <button 
+                    onClick={() => setActiveTab('about')}
+                    className={`${activeTab === 'about' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-semibold text-base transition-colors py-1 px-2 rounded-lg hover:bg-indigo-50`}
+                  >
+                    About
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('contact')}
+                    className={`${activeTab === 'contact' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-semibold text-base transition-colors py-1 px-2 rounded-lg hover:bg-indigo-50`}
+                  >
+                    Contact
+                  </button>
                 </nav>
                 
                 {/* Mobile Menu Button */}
@@ -794,7 +508,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                   className="lg:hidden"
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
                 >
-                  <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
                 </Button>
                 
                 {/* Desktop User Actions */}
@@ -820,7 +534,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                         onClick={logout}
                         className="text-gray-500 hover:text-gray-700"
                       >
-                        <LogOut className="w-4 h-4 mr-2" />
+                        <LogOut className="w-5 h-5 mr-2" />
                         Logout
                       </Button>
 
@@ -836,7 +550,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                           setShowAuthModal(true);
                         }}
                       >
-                        <LogIn className="w-4 h-4 mr-2" />
+                        <LogIn className="w-5 h-5 mr-2" />
                         Sign In
                       </Button>
                       <Button 
@@ -846,7 +560,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                           setShowAuthModal(true);
                         }}
                       >
-                        <UserPlus className="w-4 h-4 mr-2" />
+                        <UserPlus className="w-5 h-5 mr-2" />
                         Sign Up
                       </Button>
                     </div>
@@ -862,18 +576,28 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                     <nav className="space-y-3">
                       <button 
                         onClick={() => { setActiveTab('home'); setShowMobileMenu(false); }}
-                        className={`block w-full text-left py-2 px-3 rounded-lg ${activeTab === 'home' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`block w-full text-left py-2 px-3 rounded-lg text-base font-semibold ${activeTab === 'home' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
                       >
                         Home
                       </button>
                       <button 
                         onClick={() => { setActiveTab('list'); setShowMobileMenu(false); }}
-                        className={`block w-full text-left py-2 px-3 rounded-lg ${activeTab === 'list' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`block w-full text-left py-2 px-3 rounded-lg text-base font-semibold ${activeTab === 'list' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
                       >
                         Blog
                       </button>
-                      <a href="#about" className="block py-2 px-3 rounded-lg text-gray-600 hover:bg-gray-50">About</a>
-                      <a href="#contact" className="block py-2 px-3 rounded-lg text-gray-600 hover:bg-gray-50">Contact</a>
+                      <button 
+                        onClick={() => { setActiveTab('about'); setShowMobileMenu(false); }}
+                        className={`block w-full text-left py-2 px-3 rounded-lg text-base font-semibold ${activeTab === 'about' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        About
+                      </button>
+                      <button 
+                        onClick={() => { setActiveTab('contact'); setShowMobileMenu(false); }}
+                        className={`block w-full text-left py-2 px-3 rounded-lg text-base font-semibold ${activeTab === 'contact' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        Contact
+                      </button>
                     </nav>
                     
                     {/* Mobile User Actions */}
@@ -900,7 +624,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                             className="w-full text-gray-500"
                             onClick={() => { logout(); setShowMobileMenu(false); }}
                           >
-                            <LogOut className="w-4 h-4 mr-2" />
+                            <LogOut className="w-5 h-5 mr-2" />
                             Logout
                           </Button>
                         </div>
@@ -912,7 +636,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                             className="w-full"
                             onClick={() => { setAuthMode('login'); setShowAuthModal(true); setShowMobileMenu(false); }}
                           >
-                            <LogIn className="w-4 h-4 mr-2" />
+                            <LogIn className="w-5 h-5 mr-2" />
                             Sign In
                           </Button>
                           <Button 
@@ -920,7 +644,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                             className="w-full"
                             onClick={() => { setAuthMode('register'); setShowAuthModal(true); setShowMobileMenu(false); }}
                           >
-                            <UserPlus className="w-4 h-4 mr-2" />
+                            <UserPlus className="w-5 h-5 mr-2" />
                             Sign Up
                           </Button>
                         </div>
@@ -1023,7 +747,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
             )}
 
             {/* Featured Posts Section */}
-            {activeTab === 'home' && featuredPosts.length > 0 && (
+            {activeTab === 'home' && posts.filter(post => post.status === 'published').length > 0 && (
               <section className="py-16 bg-gray-50">
                 <div className="container mx-auto px-4">
                   <div className="text-center mb-12">
@@ -1033,7 +757,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {featuredPosts.map(post => (
+                    {posts.filter(post => post.status === 'published').slice(0, 3).map(post => (
                       <Card key={post.id} className="hover:shadow-lg transition-all h-full flex flex-col">
                         <CardHeader>
                           <div className="flex items-center space-x-2 text-sm text-indigo-600 mb-2">
@@ -1137,7 +861,7 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                       <Button 
                         type="submit" 
                         size="lg"
-                        className="py-4 px-8 text-lg"
+                        className="py-4 px-8 text-lg bg-indigo-600 text-white hover:bg-indigo-700 font-semibold"
                       >
                         Subscribe
                       </Button>
@@ -1150,6 +874,393 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                   </div>
                 </div>
               </section>
+            )}
+
+            {/* About Page */}
+            {activeTab === 'about' && (
+              <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50">
+                {/* Hero Section */}
+                <section className="relative bg-gradient-to-br from-indigo-50 to-blue-100 py-12 sm:py-16 md:py-20 lg:py-32 overflow-hidden">
+                  <div className="absolute inset-0 opacity-10">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMEMzLjU4IDAgMCAzLjU4IDAgOEMwIDEyLjQyIDMuNTggMTYgOCAxNkMxMi40MiAxNiAxNiAxMi40MiAxNiA4QzE2IDMuNTggMTIuNDIgMCA4IDBaTTggMTVDNC4xNCAxNSAxIDExLjg2IDEgOEMxIDQuMTQgNC4xNCAxIDggMUMxMS44NiAxIDE1IDQuMTQgMTUgOEMxNSAxMS44NiAxMS44NiAxNSA4IDE1WiIgZmlsbD0iIzRDNThGQiIvPgo8L3N2Zz4=')]"></div>
+                  </div>
+                  <div className="container mx-auto px-4 text-center relative z-10">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
+                      About <span className="text-indigo-600">WriteMind</span>
+                    </h1>
+                    <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
+                      We're on a mission to democratize publishing and give every writer a platform to share their voice with the world.
+                    </p>
+                    <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
+                      <Button 
+                        size="lg"
+                        onClick={handleNewPost}
+                        className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
+                      >
+                        Start Writing Now
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="lg"
+                        className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
+                        onClick={() => setActiveTab('list')}
+                      >
+                        Explore Articles
+                      </Button>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Story Section */}
+                <section className="py-16 bg-white">
+                  <div className="container mx-auto px-4">
+                    <div className="max-w-4xl mx-auto">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                          <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Story</h2>
+                          <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                            WriteMind was founded in 2023 with a simple mission: to create the best platform for writers to share their knowledge and ideas with the world.
+                          </p>
+                          <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                            We believe everyone has valuable insights to share, and we're building tools to make publishing accessible to all - from hobby bloggers to professional writers.
+                          </p>
+                          <p className="text-lg text-gray-600 leading-relaxed">
+                            Our platform combines the simplicity of traditional blogging with the power of modern technology, creating an environment where great content can thrive.
+                          </p>
+                        </div>
+                        <div className="relative">
+                          <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl p-8 shadow-lg">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="text-center">
+                                <div className="text-3xl font-bold text-indigo-600 mb-2">2023</div>
+                                <div className="text-gray-600">Founded</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-3xl font-bold text-purple-600 mb-2">100+</div>
+                                <div className="text-gray-600">Articles</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-3xl font-bold text-blue-600 mb-2">50+</div>
+                                <div className="text-gray-600">Writers</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-3xl font-bold text-pink-600 mb-2">10K+</div>
+                                <div className="text-gray-600">Readers</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Values Section */}
+                <section className="py-16 bg-gray-50">
+                  <div className="container mx-auto px-4">
+                    <div className="max-w-6xl mx-auto">
+                      <div className="text-center mb-16">
+                        <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Values</h2>
+                        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                          The principles that guide everything we do
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <Card className="text-center border-0 shadow-lg">
+                          <CardHeader>
+                            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                              <Pen className="w-8 h-8 text-white" />
+                            </div>
+                            <CardTitle className="text-xl">Quality Content</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-gray-600 leading-relaxed">
+                              We believe in the power of well-crafted content that educates, inspires, and connects people.
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card className="text-center border-0 shadow-lg">
+                          <CardHeader>
+                            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                              <Users className="w-8 h-8 text-white" />
+                            </div>
+                            <CardTitle className="text-xl">Community First</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-gray-600 leading-relaxed">
+                              Building a supportive community where writers can grow, learn, and inspire each other.
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card className="text-center border-0 shadow-lg">
+                          <CardHeader>
+                            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                              <Star className="w-8 h-8 text-white" />
+                            </div>
+                            <CardTitle className="text-xl">Innovation</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-gray-600 leading-relaxed">
+                              Continuously improving our platform with cutting-edge technology and user-focused design.
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Team Section */}
+                <section className="py-16 bg-white">
+                  <div className="container mx-auto px-4">
+                    <div className="max-w-4xl mx-auto text-center">
+                      <h2 className="text-3xl font-bold text-gray-900 mb-6">Meet Our Team</h2>
+                      <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
+                        A passionate group of writers, developers, and designers working together to build the future of publishing.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <Card className="text-center border-0 shadow-lg">
+                          <CardHeader>
+                            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                              <span className="text-2xl font-bold text-white">P</span>
+                            </div>
+                            <CardTitle>Priyansh</CardTitle>
+                            <p className="text-gray-600">Founder & CEO</p>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-gray-600 text-sm">
+                              Passionate about creating platforms that empower writers and connect communities.
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card className="text-center border-0 shadow-lg">
+                          <CardHeader>
+                            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                              <span className="text-2xl font-bold text-white">D</span>
+                            </div>
+                            <CardTitle>Development Team</CardTitle>
+                            <p className="text-gray-600">Engineering</p>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-gray-600 text-sm">
+                              Building the technology that makes publishing seamless and enjoyable.
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card className="text-center border-0 shadow-lg">
+                          <CardHeader>
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                              <span className="text-2xl font-bold text-white">C</span>
+                            </div>
+                            <CardTitle>Community</CardTitle>
+                            <p className="text-gray-600">Writers & Readers</p>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-gray-600 text-sm">
+                              The heart of WriteMind - our amazing community of writers and readers.
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* CTA Section */}
+                <section className="py-16 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white">
+                  <div className="container mx-auto px-4 text-center">
+                    <div className="max-w-3xl mx-auto">
+                      <h2 className="text-3xl font-bold mb-6">Ready to Start Writing?</h2>
+                      <p className="text-xl text-indigo-100 mb-8">
+                        Join thousands of writers who are already sharing their stories with the world.
+                      </p>
+                      <div className="flex flex-col sm:flex-row justify-center gap-4">
+                        <button 
+                          onClick={handleNewPost}
+                          className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold bg-white text-indigo-600 hover:bg-indigo-600 hover:text-white shadow-lg transform hover:scale-105 transition-all duration-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          <Pen className="w-5 h-5 mr-2" />
+                          Start Writing
+                        </button>
+                        <button 
+                          onClick={() => setActiveTab('list')}
+                          className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold bg-indigo-600 text-white hover:bg-white hover:text-indigo-600 shadow-lg transform hover:scale-105 transition-all duration-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          <BookOpen className="w-5 h-5 mr-2" />
+                          Explore Articles
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {/* Contact Page */}
+            {activeTab === 'contact' && (
+              <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50">
+                {/* Hero Section */}
+                <section className="relative bg-gradient-to-br from-indigo-50 to-blue-100 py-12 sm:py-16 md:py-20 lg:py-32 overflow-hidden">
+                  <div className="absolute inset-0 opacity-10">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMEMzLjU4IDAgMCAzLjU4IDAgOEMwIDEyLjQyIDMuNTggMTYgOCAxNkMxMi40MiAxNiAxNiAxMi40MiAxNiA4QzE2IDMuNTggMTIuNDIgMCA4IDBaTTggMTVDNC4xNCAxNSAxIDExLjg2IDEgOEMxIDQuMTQgNC4xNCAxIDggMUMxMS44NiAxIDE1IDQuMTQgMTUgOEMxNSAxMS44NiAxMS44NiAxNSA4IDE1WiIgZmlsbD0iIzRDNThGQiIvPgo8L3N2Zz4=')]"></div>
+                  </div>
+                  <div className="container mx-auto px-4 text-center relative z-10">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
+                      Get in <span className="text-indigo-600">Touch</span>
+                    </h1>
+                    <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
+                      Have questions, suggestions, or just want to say hello? We'd love to hear from you!
+                    </p>
+                  </div>
+                </section>
+
+                {/* Contact Form Section */}
+                <section className="py-16 bg-white">
+                  <div className="container mx-auto px-4">
+                    <div className="max-w-4xl mx-auto">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        {/* Contact Form */}
+                        <div>
+                          <h2 className="text-3xl font-bold text-gray-900 mb-6">Send us a Message</h2>
+                          <form className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor="firstName" className="text-gray-700 font-medium">First Name</Label>
+                                <Input 
+                                  id="firstName" 
+                                  type="text" 
+                                  placeholder="Your first name"
+                                  className="mt-1"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="lastName" className="text-gray-700 font-medium">Last Name</Label>
+                                <Input 
+                                  id="lastName" 
+                                  type="text" 
+                                  placeholder="Your last name"
+                                  className="mt-1"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label htmlFor="email" className="text-gray-700 font-medium">Email Address</Label>
+                              <Input 
+                                id="email" 
+                                type="email" 
+                                placeholder="your.email@example.com"
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="subject" className="text-gray-700 font-medium">Subject</Label>
+                              <Input 
+                                id="subject" 
+                                type="text" 
+                                placeholder="What's this about?"
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="message" className="text-gray-700 font-medium">Message</Label>
+                              <Textarea 
+                                id="message" 
+                                placeholder="Tell us what's on your mind..."
+                                className="mt-1 min-h-[120px]"
+                              />
+                            </div>
+                            <Button 
+                              type="submit" 
+                              size="lg"
+                              className="w-full sm:w-auto"
+                            >
+                              <Mail className="w-5 h-5 mr-2" />
+                              Send Message
+                            </Button>
+                          </form>
+                        </div>
+
+                        {/* Contact Information */}
+                        <div>
+                          <h2 className="text-3xl font-bold text-gray-900 mb-6">Contact Information</h2>
+                                                     <div className="space-y-6">
+                             <div className="flex items-start space-x-4">
+                               <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                 <Mail className="w-6 h-6 text-indigo-600" />
+                               </div>
+                               <div>
+                                 <h3 className="text-lg font-semibold text-gray-900 mb-1">Email</h3>
+                                 <p className="text-gray-600">priyanshtyagi30@gmail.com</p>
+                                 <p className="text-sm text-gray-500">We'll get back to you within 24 hours</p>
+                               </div>
+                             </div>
+                           </div>
+
+                                                     {/* Social Links */}
+                           <div className="mt-8 pt-8 border-t border-gray-200">
+                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Follow Us</h3>
+                             <div className="flex space-x-4">
+                               <a href="https://www.instagram.com/brop1_2/" className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 hover:bg-purple-200 transition-colors" target="_blank" rel="noopener noreferrer">
+                                 <Instagram className="w-5 h-5" />
+                               </a>
+                               <a href="https://www.linkedin.com/in/priyansh-tyagi-3972442b0" className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-200 transition-colors" target="_blank" rel="noopener noreferrer">
+                                 <Linkedin className="w-5 h-5" />
+                               </a>
+                               <a href="https://github.com/BroPriyansh" className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors" target="_blank" rel="noopener noreferrer">
+                                 <Github className="w-5 h-5" />
+                               </a>
+                             </div>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* FAQ Section */}
+                <section className="py-16 bg-gray-50">
+                  <div className="container mx-auto px-4">
+                    <div className="max-w-4xl mx-auto">
+                      <div className="text-center mb-12">
+                        <h2 className="text-3xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
+                        <p className="text-xl text-gray-600">Find answers to common questions about WriteMind</p>
+                      </div>
+                      <div className="space-y-6">
+                        <Card className="border-0 shadow-lg">
+                          <CardHeader>
+                            <CardTitle className="text-lg">How do I start writing on WriteMind?</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-gray-600">
+                              Simply sign up for an account and click "New Post" to start writing. Our editor is designed to be intuitive and distraction-free.
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card className="border-0 shadow-lg">
+                          <CardHeader>
+                            <CardTitle className="text-lg">Is WriteMind free to use?</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-gray-600">
+                              Yes! WriteMind is completely free to use. You can create unlimited posts and reach our growing community of readers.
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card className="border-0 shadow-lg">
+                          <CardHeader>
+                            <CardTitle className="text-lg">Can I monetize my content?</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-gray-600">
+                              We're working on monetization features. Stay tuned for updates on our partner program and sponsorship opportunities.
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
             )}
 
             {/* Article View */}
@@ -1574,13 +1685,13 @@ Start experimenting with CSS Grid today and discover how it can transform your a
                 <div id="contact">
                   <h3 className="text-white font-medium mb-4">Connect</h3>
                   <div className="flex space-x-4">
-                    <a href="#" className="text-gray-400 hover:text-white">
-                      <Twitter className="w-5 h-5" />
+                    <a href="https://www.instagram.com/brop1_2/" className="text-gray-400 hover:text-white" target="_blank" rel="noopener noreferrer">
+                      <Instagram className="w-5 h-5" />
                     </a>
-                    <a href="#" className="text-gray-400 hover:text-white">
+                    <a href="https://www.linkedin.com/in/priyansh-tyagi-3972442b0" className="text-gray-400 hover:text-white" target="_blank" rel="noopener noreferrer">
                       <Linkedin className="w-5 h-5" />
                     </a>
-                    <a href="#" className="text-gray-400 hover:text-white">
+                    <a href="https://github.com/BroPriyansh" className="text-gray-400 hover:text-white" target="_blank" rel="noopener noreferrer">
                       <Github className="w-5 h-5" />
                     </a>
                   </div>

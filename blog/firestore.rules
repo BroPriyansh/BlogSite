@@ -1,9 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to read all posts
+    // Allow users to read published posts, but drafts only to their creators
     match /posts/{postId} {
-      allow read: if true;
+      allow read: if 
+        // Published posts are visible to everyone
+        resource.data.status == 'published' ||
+        // Drafts are only visible to their creators or admin
+        (resource.data.status == 'draft' && (
+          request.auth != null && (
+            request.auth.uid == resource.data.authorId || 
+            request.auth.token.email == 'memuforpc12@gmail.com'
+          )
+        ));
       
       // Allow authenticated users to create new posts
       allow create: if request.auth != null;

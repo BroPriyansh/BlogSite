@@ -15,6 +15,17 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
   const [comments, setComments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Debug: Log post data
+  useEffect(() => {
+    console.log('ArticleView - Post data:', {
+      id: post?.id,
+      title: post?.title,
+      imageUrl: post?.imageUrl ? post.imageUrl.substring(0, 100) + '...' : 'No image',
+      hasImageUrl: !!post?.imageUrl,
+      imageUrlLength: post?.imageUrl?.length || 0
+    });
+  }, [post]);
+
   // Calculate reading time
   useEffect(() => {
     if (post?.content) {
@@ -304,16 +315,46 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
               </div>
             </div>
 
-            {/* Featured Image Placeholder */}
-            <div className="w-full h-48 sm:h-64 md:h-80 lg:h-96 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 rounded-2xl mb-8 sm:mb-10 flex items-center justify-center border border-indigo-100 shadow-sm">
-              <div className="text-center p-4 sm:p-6">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
-                  <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
+            {/* Featured Image */}
+            {post.imageUrl ? (
+              <div className="w-full mb-8 sm:mb-10">
+                <div className="border-2 border-gray-200 rounded-2xl overflow-hidden shadow-lg relative">
+                  <img
+                    src={post.imageUrl}
+                    alt="Featured image"
+                    className="w-full max-h-[600px] object-contain bg-gray-50"
+                    onLoad={() => console.log('Image loaded successfully:', post.imageUrl?.substring(0, 50) + '...')}
+                    onError={(e) => {
+                      console.error('Image failed to load:', post.imageUrl?.substring(0, 50) + '...');
+                      e.target.style.display = 'none';
+                      const fallback = e.target.parentElement.querySelector('.image-fallback');
+                      if (fallback) {
+                        fallback.style.display = 'flex';
+                      }
+                    }}
+                  />
+                  <div className="image-fallback w-full h-48 sm:h-64 md:h-80 lg:h-96 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 flex items-center justify-center border border-indigo-100" style={{ display: 'none' }}>
+                    <div className="text-center p-4 sm:p-6">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+                        <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
+                      </div>
+                      <p className="text-indigo-700 font-medium text-base sm:text-lg">Image not available</p>
+                      <p className="text-indigo-500 text-xs sm:text-sm mt-1">Featured image could not be loaded</p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-indigo-700 font-medium text-base sm:text-lg">Article Featured Image</p>
-                <p className="text-indigo-500 text-xs sm:text-sm mt-1">Upload your image here</p>
               </div>
-            </div>
+            ) : (
+              <div className="w-full h-48 sm:h-64 md:h-80 lg:h-96 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 rounded-2xl mb-8 sm:mb-10 flex items-center justify-center border border-indigo-100 shadow-sm">
+                <div className="text-center p-4 sm:p-6">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+                    <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
+                  </div>
+                  <p className="text-indigo-700 font-medium text-base sm:text-lg">No Featured Image</p>
+                  <p className="text-indigo-500 text-xs sm:text-sm mt-1">This article doesn't have a featured image</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Article Content */}

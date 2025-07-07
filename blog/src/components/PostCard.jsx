@@ -10,11 +10,39 @@ const PostCard = ({ post, onView, onEdit, onDelete, currentUser }) => {
   // Check if current user is admin
   const isAdmin = currentUser?.email === 'memuforpc12@gmail.com';
 
+  // Debug: Log post data to see if imageUrl exists
+  console.log('PostCard - Post data:', {
+    id: post.id,
+    title: post.title,
+    hasImageUrl: !!post.imageUrl,
+    imageUrl: post.imageUrl ? post.imageUrl.substring(0, 50) + '...' : 'No image'
+  });
+
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
       <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
+        <div className="flex items-start gap-4 mb-4">
+          {/* Image Preview */}
+          {post.imageUrl && (
+            <div className="flex-shrink-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-gray-200 shadow-sm">
+                <img
+                  src={post.imageUrl}
+                  alt="Post preview"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div className="w-full h-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center" style={{ display: 'none' }}>
+                  <BookOpen className="w-6 h-6 text-indigo-600" />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-3 mb-3">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                 post.status === 'published' 

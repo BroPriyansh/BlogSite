@@ -14,26 +14,68 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
-// Get all posts
+// Helper function to retry Firestore operations
+const retryOperation = async (operation, maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      console.error(`Attempt ${attempt} failed:`, error);
+      
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Wait before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+};
+
+// Get all posts with improved error handling
 export const getPosts = async () => {
   try {
     console.log('Fetching posts from Firestore...');
-    const q = query(collection(db, 'posts'), orderBy('updatedAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    const posts = [];
-    querySnapshot.forEach((doc) => {
-      posts.push({ id: doc.id, ...doc.data() });
-    });
+    
+    const operation = async () => {
+      const q = query(collection(db, 'posts'), orderBy('updatedAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const posts = [];
+      querySnapshot.forEach((doc) => {
+        posts.push({ id: doc.id, ...doc.data() });
+      });
+      return posts;
+    };
+    
+    const posts = await retryOperation(operation);
     console.log('Posts fetched successfully:', posts.length);
+    
+    // Debug: Check if posts have imageUrl
+    const postsWithImages = posts.filter(post => post.imageUrl);
+    console.log('Posts with images:', postsWithImages.length);
+    postsWithImages.forEach(post => {
+      console.log('Post with image:', post.title, 'Image URL length:', post.imageUrl?.length);
+    });
+    
     return posts;
   } catch (error) {
     console.error('Error getting posts:', error);
+    
+    // Provide specific error messages
+    if (error.code === 'permission-denied') {
+      console.error('Permission denied accessing posts');
+    } else if (error.code === 'unavailable') {
+      console.error('Firestore is currently unavailable');
+    } else if (error.code === 'network-error') {
+      console.error('Network error while fetching posts');
+    }
+    
     // Return empty array instead of throwing for better UX
     return [];
   }
 };
 
-// Create a new post
+// Create a new post with improved error handling
 export const createPost = async (postData, userId, userName) => {
   try {
     console.log('=== CREATE POST FUNCTION CALLED ===');
@@ -57,6 +99,9 @@ export const createPost = async (postData, userId, userName) => {
       status: postData.status || 'draft'
     };
     
+    console.log('Post data includes imageUrl:', !!postData.imageUrl);
+    console.log('Final post object includes imageUrl:', !!post.imageUrl);
+    
     // Remove undefined fields that Firestore doesn't accept
     Object.keys(post).forEach(key => {
       if (post[key] === undefined) {
@@ -68,11 +113,16 @@ export const createPost = async (postData, userId, userName) => {
     console.log('Attempting to write to Firestore...');
     console.log('Collection path: posts');
     
-    const docRef = await addDoc(collection(db, 'posts'), post);
-    console.log('✅ Post created successfully with ID:', docRef.id);
+    const operation = async () => {
+      const docRef = await addDoc(collection(db, 'posts'), post);
+      return { id: docRef.id, ...post };
+    };
+    
+    const result = await retryOperation(operation);
+    console.log('✅ Post created successfully with ID:', result.id);
     console.log('=== CREATE POST FUNCTION SUCCESS ===');
     
-    return { id: docRef.id, ...post };
+    return result;
   } catch (error) {
     console.error('❌ Error creating post:', error);
     console.error('Error details:', {
@@ -100,22 +150,26 @@ export const createPost = async (postData, userId, userName) => {
   }
 };
 
-// Update a post
+// Update a post with improved error handling
 export const updatePost = async (postId, postData) => {
   try {
     console.log('Updating post:', postId, postData);
     
-    const postRef = doc(db, 'posts', postId);
-    const updateData = {
-      ...postData,
-      updatedAt: serverTimestamp(),
-      excerpt: postData.content.substring(0, 100) + '...'
+    const operation = async () => {
+      const postRef = doc(db, 'posts', postId);
+      const updateData = {
+        ...postData,
+        updatedAt: serverTimestamp(),
+        excerpt: postData.content.substring(0, 100) + '...'
+      };
+      
+      await updateDoc(postRef, updateData);
+      return { id: postId, ...updateData };
     };
     
-    await updateDoc(postRef, updateData);
+    const result = await retryOperation(operation);
     console.log('Post updated successfully');
-    
-    return { id: postId, ...updateData };
+    return result;
   } catch (error) {
     console.error('Error updating post:', error);
     
@@ -124,6 +178,8 @@ export const updatePost = async (postId, postData) => {
       errorMessage = 'Permission denied. You can only edit your own posts.';
     } else if (error.code === 'not-found') {
       errorMessage = 'Post not found.';
+    } else if (error.code === 'unavailable') {
+      errorMessage = 'Firestore is currently unavailable. Please try again.';
     }
     
     throw new Error(errorMessage);

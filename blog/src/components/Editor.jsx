@@ -38,13 +38,26 @@ export default function Editor({
   // Handle image upload
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
-    if (!file) return;
+    console.log('Image upload triggered:', file);
+    
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
 
     // Check if user is authenticated
     if (!currentUser) {
+      console.log('User not authenticated');
       setImageError('Please log in to upload images');
       return;
     }
+
+    console.log('User authenticated, starting upload...');
+    console.log('File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
 
     // Clear previous errors
     setImageError('');
@@ -52,10 +65,12 @@ export default function Editor({
     // Validate file
     const validation = validateImageFile(file);
     if (!validation.isValid) {
+      console.log('File validation failed:', validation.errors);
       setImageError(validation.errors[0]);
       return;
     }
 
+    console.log('File validation passed, starting upload...');
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -71,12 +86,18 @@ export default function Editor({
         });
       }, 100);
 
+      console.log('Calling uploadImage function...');
       const result = await uploadImage(file, currentUser.uid);
+      console.log('Upload successful:', result);
+      console.log('Image URL type:', typeof result.url);
+      console.log('Image URL starts with data:', result.url.startsWith('data:'));
+      console.log('Image URL length:', result.url.length);
       
       clearInterval(progressInterval);
       setUploadProgress(100);
       
       setImageUrl(result.url);
+      console.log('Image URL set:', result.url);
       
       // Update the post data with image information
       if (currentPost) {
@@ -87,9 +108,11 @@ export default function Editor({
       setTimeout(() => {
         setUploadProgress(0);
         setIsUploading(false);
+        console.log('Upload process completed');
       }, 500);
 
     } catch (error) {
+      console.error('Upload failed:', error);
       setImageError(error.message);
       setIsUploading(false);
       setUploadProgress(0);
@@ -145,14 +168,17 @@ export default function Editor({
                 <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 {currentPost ? 'Edit Post' : 'New Post'}
               </CardTitle>
-              {lastSaved && (
-                <div className="flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-green-50 border border-green-200 rounded-full">
-                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
-                  <span className="text-xs sm:text-sm font-medium text-green-700">
-                    Saved {new Date(lastSaved).toLocaleTimeString()}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                {lastSaved && (
+                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-green-50 border border-green-200 rounded-full">
+                    <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
+                    <span className="text-xs sm:text-sm font-medium text-green-700">
+                      Saved {new Date(lastSaved).toLocaleTimeString()}
+                    </span>
+                  </div>
+                )}
+
+              </div>
             </div>
           </CardHeader>
 
@@ -203,7 +229,7 @@ export default function Editor({
                         Upload a featured image
                       </p>
                       <p className="text-xs text-gray-500 mb-2 sm:mb-3">
-                        JPEG, PNG, GIF, or WebP (max 5MB)
+                        JPEG, PNG, GIF, or WebP (max 2MB for free storage)
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -253,7 +279,7 @@ export default function Editor({
                     <img
                       src={imageUrl}
                       alt="Featured image"
-                      className="w-full h-32 sm:h-40 md:h-48 object-cover"
+                      className="w-full max-h-96 object-contain bg-gray-50"
                       onError={() => setImageError('Failed to load image')}
                     />
                     <div className="absolute top-2 right-2 flex gap-1">
@@ -384,6 +410,7 @@ export default function Editor({
                 <span>Saving changes...</span>
               </div>
             )}
+
             {isUploading && (
               <div className="flex items-center gap-2 text-blue-600">
                 <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
