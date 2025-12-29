@@ -103,10 +103,11 @@ function App() {
         // Remove undefined id for new posts
         const postWithoutId = { ...post };
         delete postWithoutId.id;
-        console.log('Calling createPost with:', { post: postWithoutId, userId: currentUser.uid, userName: currentUser.name });
+        console.log('Calling createPost with:', { post: postWithoutId, userId: currentUser?.uid, userName: currentUser?.name || currentUser?.email?.split("@")[0] });
+        if (!currentUser?.name) console.warn('User name missing, using email local-part as fallback:', currentUser?.email);
         
         // Create new post in Firestore
-        const newPost = await createPost(postWithoutId, currentUser.uid, currentUser.name);
+        const newPost = await createPost(postWithoutId, currentUser.uid, currentUser.name || currentUser.email?.split('@')[0]);
         console.log('✅ New post created:', newPost);
         setPosts([newPost, ...posts]);
       }
