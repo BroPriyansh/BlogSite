@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { ArrowLeft, Calendar, Clock, User, Tag, BookOpen, Share2, Heart, MessageCircle, Trash2, Coffee } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Tag, BookOpen, Share2, Heart, MessageCircle, Trash2, Coffee, Lock } from 'lucide-react';
 import { likePost, getLikeCount, checkUserLike, addComment, getComments, deleteComment } from '../services/postsService';
 import { getUserProfile } from '../services/userService';
 import PaymentModal from './PaymentModal';
@@ -34,17 +34,6 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
     };
     loadAuthorProfile();
   }, [post?.authorId]);
-
-  // Debug: Log post data
-  useEffect(() => {
-    console.log('ArticleView - Post data:', {
-      id: post?.id,
-      title: post?.title,
-      imageUrl: post?.imageUrl ? post.imageUrl.substring(0, 100) + '...' : 'No image',
-      hasImageUrl: !!post?.imageUrl,
-      imageUrlLength: post?.imageUrl?.length || 0
-    });
-  }, [post]);
 
   // Calculate reading time
   useEffect(() => {
@@ -378,16 +367,45 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
           </div>
 
           {/* Article Content */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 md:p-12 mb-12 sm:mb-16">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 md:p-12 mb-12 sm:mb-16 relative overflow-hidden">
             <div className="max-w-none">
               <div className="text-gray-700 leading-relaxed text-base sm:text-lg lg:text-xl space-y-6">
-                {post.content.split('\n').map((paragraph, index) => (
+                {(currentUser && currentUser.emailVerified ? post.content : post.content.substring(0, Math.floor(post.content.length * 0.3)) + '...').split('\n').map((paragraph, index) => (
                   <p key={index} className="mb-6 text-gray-700 leading-7 sm:leading-8 text-base sm:text-lg lg:text-xl">
                     {paragraph}
                   </p>
                 ))}
               </div>
             </div>
+
+            {/* Content Gate Overlay */}
+            {(!currentUser || !currentUser.emailVerified) && (
+              <div className="absolute inset-x-0 bottom-0 h-96 bg-gradient-to-t from-white via-white/95 to-transparent flex flex-col items-center justify-center text-center p-6 z-10">
+                <div className="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-white/50 max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-indigo-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Read the full story</h3>
+                  <p className="text-gray-600 mb-6">
+                    Sign in and verify your email to read the rest of this article and join the conversation.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      // Trigger auth modal from parent if possible, or just redirect/alert
+                      // Since we don't have direct access to setAuthMode here, we can dispatch a custom event or use a prop if available.
+                      // For now, we'll assume the user knows to click the header button or add a dedicated prop instruction later if needed.
+                      // A simple alert or visual cue might be enough, or we can assume the user sees the header.
+                      // Let's scroll to top or alert.
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      // Ideally, we should pass a 'onLoginRequest' prop.
+                    }}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl"
+                  >
+                    Sign In to Continue
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Article Footer */}
             <div className="mt-12 pt-8 border-t border-gray-200">

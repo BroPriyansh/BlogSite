@@ -4,7 +4,7 @@ import { updateUserProfile, getUserProfile } from '../services/userService';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { X, Save, Coffee, User, Loader2 } from 'lucide-react';
+import { X, Save, Coffee, User, Loader2, Mail } from 'lucide-react';
 
 export default function ProfileSettings({ isOpen, onClose }) {
     const { currentUser } = useAuth();
@@ -86,6 +86,20 @@ export default function ProfileSettings({ isOpen, onClose }) {
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="flex items-center gap-2">
+                                    <Mail className="w-4 h-4 text-gray-500" />
+                                    Email Address
+                                </Label>
+                                <Input
+                                    id="email"
+                                    value={currentUser?.email || ''}
+                                    readOnly
+                                    disabled
+                                    className="bg-gray-50 text-gray-500 focus:ring-0 cursor-not-allowed"
+                                />
+                            </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="displayName">Display Name</Label>
                                 <Input

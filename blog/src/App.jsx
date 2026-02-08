@@ -16,6 +16,7 @@ import { formatDateOnly } from './utils/dateUtils';
 import { saveLastRead, saveLastWritten } from './services/recommendationService';
 import RecommendedPosts from './components/RecommendedPosts';
 import ProfileSettings from './components/ProfileSettings';
+import VerificationBanner from './components/VerificationBanner';
 import WriteMindLogo from './WriteMind.png';
 
 
@@ -306,6 +307,14 @@ function App() {
       return;
     }
 
+    if (!currentUser.emailVerified) {
+      setNotification({
+        message: 'Please verify your email address to create new posts.',
+        type: 'error'
+      });
+      return;
+    }
+
     setActiveTab('editor');
     setCurrentPost(null);
     setTitle('');
@@ -400,6 +409,7 @@ function App() {
   const publishedPosts = posts.filter(post => post.status === 'published');
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      <VerificationBanner />
       {/* Notification */}
       {notification && (
         <Notification

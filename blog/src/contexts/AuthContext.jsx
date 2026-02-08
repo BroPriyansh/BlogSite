@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
@@ -36,14 +37,14 @@ export const AuthProvider = ({ children }) => {
           try {
             console.log('=== AUTH STATE CHANGED ===');
             console.log('Firebase User:', user);
-            
+
             if (user) {
               // Get additional user data from Firestore
               try {
                 console.log('Fetching user data from Firestore for UID:', user.uid);
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
                 console.log('User document exists:', userDoc.exists());
-                
+
                 if (userDoc.exists()) {
                   const userData = userDoc.data();
                   console.log('User data from Firestore:', userData);
@@ -52,7 +53,8 @@ export const AuthProvider = ({ children }) => {
                     email: user.email,
                     name: userData.name,
                     avatar: userData.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
-                    createdAt: userData.createdAt
+                    createdAt: userData.createdAt,
+                    emailVerified: user.emailVerified
                   });
                 } else {
                   console.log('User document not found, using fallback data');
@@ -62,7 +64,8 @@ export const AuthProvider = ({ children }) => {
                     email: user.email,
                     name: user.displayName || user.email?.split('@')[0],
                     avatar: user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
-                    createdAt: user.metadata.creationTime
+                    createdAt: user.metadata.creationTime,
+                    emailVerified: user.emailVerified
                   });
                 }
               } catch (error) {
@@ -72,7 +75,8 @@ export const AuthProvider = ({ children }) => {
                   email: user.email,
                   name: user.displayName || user.email?.split('@')[0],
                   avatar: user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase(),
-                  createdAt: user.metadata.creationTime
+                  createdAt: user.metadata.creationTime,
+                  emailVerified: user.emailVerified
                 });
               }
             } else {
@@ -89,7 +93,7 @@ export const AuthProvider = ({ children }) => {
         }, (error) => {
           console.error('Auth state change error:', error);
           setLoading(false);
-          
+
           // Retry connection if it's a network error
           if (retryCount < maxRetries && (error.code === 'network-error' || error.code === 'unavailable')) {
             retryCount++;
@@ -122,7 +126,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('=== REGISTER FUNCTION CALLED ===');
       console.log('Registering user:', { email, name });
-      
+
       // Create user with Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -134,6 +138,10 @@ export const AuthProvider = ({ children }) => {
       });
       console.log('Profile updated with display name');
 
+      // Send verification email
+      await sendEmailVerification(user);
+      console.log('Verification email sent');
+
       // Save additional user data to Firestore
       const userData = {
         name,
@@ -142,7 +150,7 @@ export const AuthProvider = ({ children }) => {
         avatar: name.charAt(0).toUpperCase()
       };
       console.log('Saving user data to Firestore:', userData);
-      
+
       await setDoc(doc(db, 'users', user.uid), userData);
       console.log('User data saved to Firestore successfully');
 
@@ -150,7 +158,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user };
     } catch (error) {
       let errorMessage = 'An error occurred during registration';
-      
+
       switch (error.code) {
         case 'auth/email-already-in-use':
           errorMessage = 'An account with this email already exists';
@@ -164,7 +172,7 @@ export const AuthProvider = ({ children }) => {
         default:
           errorMessage = error.message;
       }
-      
+
       throw new Error(errorMessage);
     }
   };
@@ -175,7 +183,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: userCredential.user };
     } catch (error) {
       let errorMessage = 'An error occurred during login';
-      
+
       switch (error.code) {
         case 'auth/user-not-found':
           errorMessage = 'No account found with this email';
@@ -192,7 +200,7 @@ export const AuthProvider = ({ children }) => {
         default:
           errorMessage = error.message;
       }
-      
+
       throw new Error(errorMessage);
     }
   };
@@ -205,11 +213,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const resendVerificationEmail = async () => {
+    if (currentUser && !currentUser.emailVerified) {
+      try {
+        await sendEmailVerification(auth.currentUser);
+        return { success: true };
+      } catch (error) {
+        throw error;
+      }
+    }
+  };
+
   const value = {
     currentUser,
     register,
     login,
     logout,
+    resendVerificationEmail,
     loading
   };
 

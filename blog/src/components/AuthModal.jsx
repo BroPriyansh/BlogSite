@@ -8,7 +8,7 @@ import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle } from 'luci
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
   const [mode, setMode] = useState(initialMode);
-  
+
   // Update mode when initialMode prop changes
   useEffect(() => {
     setMode(initialMode);
@@ -48,7 +48,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
         }, 1500);
       } else {
         await register(email, password, name);
-        setSuccess('Registration successful!');
+        setSuccess('Registration successful! Please check your email for verification.');
         setTimeout(() => {
           onClose();
           setEmail('');
@@ -56,7 +56,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           setName('');
           setError('');
           setSuccess('');
-        }, 1500);
+        }, 3000);
       }
     } catch (error) {
       setError(error.message);
@@ -84,7 +84,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           >
             <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
-          
+
           {/* Header with Gradient */}
           <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 rounded-t-2xl sm:rounded-t-3xl p-6 sm:p-8 text-white text-center">
             <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
@@ -98,13 +98,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               {mode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>
             <p className="text-indigo-100 text-xs sm:text-sm">
-              {mode === 'login' 
-                ? 'Sign in to your account to continue' 
+              {mode === 'login'
+                ? 'Sign in to your account to continue'
                 : 'Join our community of writers'
               }
             </p>
           </div>
-          
+
           {/* Form Content */}
           <div className="p-6 sm:p-8">
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
@@ -200,8 +200,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                   onClick={toggleMode}
                   className="text-indigo-600 hover:text-indigo-700 font-medium text-xs sm:text-sm transition-colors duration-200 hover:underline"
                 >
-                  {mode === 'login' 
-                    ? "Don't have an account? Sign up" 
+                  {mode === 'login'
+                    ? "Don't have an account? Sign up"
                     : 'Already have an account? Sign in'
                   }
                 </button>
