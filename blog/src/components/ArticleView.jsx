@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { ArrowLeft, Calendar, Clock, User, Tag, BookOpen, Share2, Heart, MessageCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Tag, BookOpen, Share2, Heart, MessageCircle, Trash2, Coffee } from 'lucide-react';
 import { likePost, getLikeCount, checkUserLike, addComment, getComments, deleteComment } from '../services/postsService';
+import { getUserProfile } from '../services/userService';
+import PaymentModal from './PaymentModal';
 import { formatDateOnly, formatDateTime } from '../utils/dateUtils';
 
 export default function ArticleView({ post, allPosts, onBack, onViewPost, currentUser }) {
@@ -12,8 +14,26 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
   const [likeCount, setLikeCount] = useState(0);
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [comment, setComment] = useState('');
+
   const [comments, setComments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [authorProfile, setAuthorProfile] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Load author profile
+  useEffect(() => {
+    const loadAuthorProfile = async () => {
+      if (post?.authorId) {
+        try {
+          const profile = await getUserProfile(post.authorId);
+          setAuthorProfile(profile);
+        } catch (error) {
+          console.error('Error loading author profile:', error);
+        }
+      }
+    };
+    loadAuthorProfile();
+  }, [post?.authorId]);
 
   // Debug: Log post data
   useEffect(() => {
@@ -58,12 +78,12 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
         try {
           console.log('Loading like data for post:', post.id);
           console.log('Current user:', currentUser);
-          
+
           const [count, userLiked] = await Promise.all([
             getLikeCount(post.id),
             currentUser ? checkUserLike(post.id, currentUser.uid) : false
           ]);
-          
+
           console.log('Like count:', count, 'User liked:', userLiked);
           setLikeCount(count);
           setIsLiked(userLiked);
@@ -146,7 +166,7 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
           currentUser.name || 'Anonymous'
         );
         console.log('Comment added successfully:', newComment);
-        
+
         // Safely add the comment to the state
         try {
           setComments(prev => [newComment, ...prev]);
@@ -246,8 +266,8 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
       <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 z-10 border-b border-gray-100">
         <div className="container mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={onBack}
               className="flex items-center space-x-2 hover:bg-gray-100 transition-colors px-3 py-2"
             >
@@ -255,19 +275,19 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
               <span className="font-medium text-sm sm:text-base">Back to Blog</span>
             </Button>
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="hover:bg-green-50 hover:text-green-600 transition-colors hidden sm:flex" 
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hover:bg-green-50 hover:text-green-600 transition-colors hidden sm:flex"
                 onClick={handleShare}
               >
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`transition-colors ${isLiked ? 'text-red-600 bg-red-50' : 'hover:bg-red-50 hover:text-red-600'}`} 
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`transition-colors ${isLiked ? 'text-red-600 bg-red-50' : 'hover:bg-red-50 hover:text-red-600'}`}
                 onClick={handleLike}
                 disabled={isLoading}
                 title={!currentUser ? 'Please log in to like posts' : ''}
@@ -293,11 +313,11 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
                 </>
               )}
             </div>
-            
+
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight">
               {post.title}
             </h1>
-            
+
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-sm text-gray-600 mb-8 sm:mb-10">
               <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-full">
                 <User className="w-4 h-4 text-indigo-600" />
@@ -373,9 +393,9 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
             <div className="mt-12 pt-8 border-t border-gray-200">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center space-x-3 sm:space-x-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className={`transition-colors px-4 py-2 ${isLiked ? 'bg-red-50 text-red-600 border-red-200' : 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'}`}
                     onClick={handleLike}
                     disabled={isLoading}
@@ -385,9 +405,9 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
                     <span className="hidden sm:inline">{isLiked ? 'Liked' : 'Like'}</span>
                     {likeCount > 0 && <span className="text-xs sm:text-sm">({likeCount})</span>}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors px-4 py-2"
                     onClick={() => setShowCommentForm(!showCommentForm)}
                     disabled={isLoading}
@@ -398,15 +418,35 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
                     {comments.length > 0 && <span className="text-xs sm:text-sm">({comments.length})</span>}
                   </Button>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-colors px-4 py-2"
-                  onClick={handleShare}
-                >
-                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  <span className="hidden sm:inline">Share</span>
-                </Button>
+                <div className="flex items-center space-x-3">
+                  {authorProfile?.upiId && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 hover:border-emerald-700 transition-colors px-4 py-2"
+                      onClick={() => {
+                        const isMobile = window.innerWidth < 768;
+                        if (isMobile) {
+                          window.location.href = `upi://pay?pa=${authorProfile.upiId}&pn=${encodeURIComponent(authorProfile.name || 'Author')}&cu=INR`;
+                        } else {
+                          setShowPaymentModal(true);
+                        }
+                      }}
+                    >
+                      <Coffee className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                      <span className="hidden sm:inline">Support with UPI</span>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-colors px-4 py-2"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    <span className="hidden sm:inline">Share</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -422,8 +462,8 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
                     {comments.length}
                   </span>
                 </h3>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowCommentForm(!showCommentForm)}
                   disabled={isLoading}
@@ -434,7 +474,7 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
                   {showCommentForm ? 'Cancel' : 'Add Comment'}
                 </Button>
               </div>
-            
+
               {/* Comment Form */}
               {showCommentForm && (
                 <div className="mb-8 p-6 sm:p-8 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl border-2 border-indigo-100">
@@ -448,14 +488,14 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
                         Join the conversation! Sign in to share your thoughts and engage with our community.
                       </p>
                       <div className="flex flex-col sm:flex-row justify-center gap-3">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           onClick={() => setShowCommentForm(false)}
                           className="px-6 py-3"
                         >
                           Close
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => {
                             setShowCommentForm(false);
                             // You could add a callback here to open the auth modal
@@ -483,17 +523,17 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
                         />
                       </div>
                       <div className="flex flex-col sm:flex-row justify-end gap-3">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
+                        <Button
+                          type="button"
+                          variant="outline"
                           onClick={() => setShowCommentForm(false)}
                           disabled={isLoading}
                           className="px-6 py-3"
                         >
                           Cancel
                         </Button>
-                        <Button 
-                          type="submit" 
+                        <Button
+                          type="submit"
                           disabled={!comment.trim() || isLoading}
                           className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
                         >
@@ -524,7 +564,7 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
                       Be the first to share your thoughts! Your comment could start an interesting discussion.
                     </p>
                     {currentUser && (
-                      <Button 
+                      <Button
                         onClick={() => setShowCommentForm(true)}
                         className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700"
                       >
@@ -604,8 +644,8 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Tags</h3>
               <div className="flex flex-wrap gap-2 sm:gap-3">
                 {post.tags.split(',').map(tag => (
-                  <span 
-                    key={tag} 
+                  <span
+                    key={tag}
                     className="px-3 sm:px-4 py-2 bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 rounded-full text-xs sm:text-sm font-medium border border-indigo-200 hover:from-indigo-200 hover:to-blue-200 transition-all duration-200 cursor-pointer"
                   >
                     #{tag.trim()}
@@ -616,13 +656,13 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
           )}
 
           {/* Related Articles */}
-          {relatedPosts.length > 0 && (
-            <div className="mb-12 sm:mb-16">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">Related Articles</h2>
+          <div className="mb-12 sm:mb-16">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">Related Articles</h2>
+            {relatedPosts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {relatedPosts.map(relatedPost => (
-                  <Card 
-                    key={relatedPost.id} 
+                  <Card
+                    key={relatedPost.id}
                     className="hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 hover:border-indigo-200 group"
                     onClick={() => onViewPost && onViewPost(relatedPost)}
                   >
@@ -647,8 +687,18 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
                   </Card>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-12 bg-gray-50 rounded-2xl border border-gray-100">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <BookOpen className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Sorry, no recommendation</h3>
+                <p className="text-gray-500 max-w-md mx-auto">
+                  We couldn't find any other articles with similar tags. Check back later for more content!
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Newsletter Signup */}
           <Card className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white border-0 shadow-xl">
@@ -675,7 +725,14 @@ export default function ArticleView({ post, allPosts, onBack, onViewPost, curren
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+      </main >
+
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        authorName={authorProfile?.name || 'Author'}
+        upiId={authorProfile?.upiId || ''}
+      />
+    </div >
   );
 } 

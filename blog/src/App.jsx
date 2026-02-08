@@ -12,12 +12,16 @@ import Editor from './components/Editor';
 import { useAuth } from './contexts/AuthContext';
 import { getPosts, createPost, updatePost, deletePost } from './services/postsService';
 import { formatDateOnly } from './utils/dateUtils';
+
+import { saveLastRead, saveLastWritten } from './services/recommendationService';
+import RecommendedPosts from './components/RecommendedPosts';
+import ProfileSettings from './components/ProfileSettings';
 import WriteMindLogo from './WriteMind.png';
 
 
 function App() {
 
-  
+
   const [posts, setPosts] = useState([]);
   const [currentPost, setCurrentPost] = useState(null);
   const [title, setTitle] = useState('');
@@ -32,6 +36,7 @@ function App() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [viewingPost, setViewingPost] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [notification, setNotification] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -58,7 +63,7 @@ function App() {
     console.log('=== SAVE POST FUNCTION CALLED ===');
     console.log('Post data:', post);
     console.log('Image URL in post:', post.imageUrl ? 'Present' : 'Missing');
-    
+
     if (!currentUser) {
       console.error('❌ No current user');
       setNotification({
@@ -72,7 +77,7 @@ function App() {
     console.log('User UID for save:', currentUser.uid);
     console.log('User Name for save:', currentUser.name);
     setIsSaving(true);
-    
+
     try {
       if (post.id) {
         console.log('🔄 Updating existing post:', post.id);
@@ -92,12 +97,17 @@ function App() {
         console.log('📝 Calling updatePost...');
         await updatePost(post.id, post);
         console.log('✅ Post updated successfully');
-        
+
         // Update local state
-        const updatedPosts = posts.map(p => 
+        const updatedPosts = posts.map(p =>
           p.id === post.id ? { ...p, ...post } : p
         );
         setPosts(updatedPosts);
+
+        // Track written post for recommendations
+        if (post.status === 'published') {
+          saveLastWritten(post);
+        }
       } else {
         console.log('🆕 Creating new post...');
         // Remove undefined id for new posts
@@ -105,13 +115,18 @@ function App() {
         delete postWithoutId.id;
         console.log('Calling createPost with:', { post: postWithoutId, userId: currentUser?.uid, userName: currentUser?.name || currentUser?.email?.split("@")[0] });
         if (!currentUser?.name) console.warn('User name missing, using email local-part as fallback:', currentUser?.email);
-        
+
         // Create new post in Firestore
         const newPost = await createPost(postWithoutId, currentUser.uid, currentUser.name || currentUser.email?.split('@')[0]);
         console.log('✅ New post created:', newPost);
         setPosts([newPost, ...posts]);
+
+        // Track written post for recommendations
+        if (newPost.status === 'published') {
+          saveLastWritten(newPost);
+        }
       }
-      
+
       setLastSaved(new Date().toISOString());
       console.log('✅ Save completed successfully');
       setNotification({
@@ -125,13 +140,13 @@ function App() {
         message: error.message,
         stack: error.stack
       });
-      
+
       console.log('🔄 Falling back to local storage...');
       // Fallback to local storage if Firestore fails
       try {
         const now = new Date().toISOString();
         if (post.id) {
-          const updatedPosts = posts.map(p => 
+          const updatedPosts = posts.map(p =>
             p.id === post.id ? { ...p, ...post, updatedAt: now } : p
           );
           setPosts(updatedPosts);
@@ -174,7 +189,7 @@ function App() {
         // Show confirmation dialog
         e.preventDefault();
         e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-        
+
         // Save draft to localStorage as fallback
         const postData = {
           id: currentPost?.id,
@@ -188,13 +203,13 @@ function App() {
           ...postData,
           timestamp: Date.now()
         }));
-        
+
         return e.returnValue;
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
@@ -207,7 +222,7 @@ function App() {
       try {
         const draft = JSON.parse(unsavedDraft);
         const draftAge = Date.now() - draft.timestamp;
-        
+
         // Only restore draft if it's less than 24 hours old
         if (draftAge < 24 * 60 * 60 * 1000) {
           setTitle(draft.title || '');
@@ -217,7 +232,7 @@ function App() {
           // Don't automatically redirect to editor - let user stay on current page
           // setActiveTab('editor');
         }
-        
+
         // Clear the stored draft
         localStorage.removeItem('unsavedDraft');
       } catch (error) {
@@ -229,7 +244,7 @@ function App() {
 
   const handleSaveDraft = async () => {
     if (!title && !content) return;
-    
+
     await savePost({
       id: currentPost?.id,
       title,
@@ -242,7 +257,7 @@ function App() {
 
   const handlePublish = async () => {
     if (!title || !content) return;
-    
+
     await savePost({
       id: currentPost?.id,
       title,
@@ -252,7 +267,7 @@ function App() {
       status: 'published',
       excerpt: content.substring(0, 100) + '...'
     });
-    
+
     setCurrentPost(null);
     setTitle('');
     setContent('');
@@ -270,6 +285,7 @@ function App() {
   };
 
   const handleViewPost = (post) => {
+    saveLastRead(post);
     setViewingPost(post);
     setActiveTab('article');
   };
@@ -283,13 +299,13 @@ function App() {
     if (authLoading) {
       return; // Don't do anything while loading
     }
-    
+
     if (!currentUser) {
       setAuthMode('login');
       setShowAuthModal(true);
       return;
     }
-    
+
     setActiveTab('editor');
     setCurrentPost(null);
     setTitle('');
@@ -311,7 +327,7 @@ function App() {
   const isAdmin = currentUser?.email === 'memuforpc12@gmail.com';
 
   const handleDeletePost = async (post) => {
-    
+
     if (!currentUser) {
       setNotification({
         message: 'Please log in to delete posts',
@@ -322,7 +338,7 @@ function App() {
 
     // Check if user can delete this post
     const canDelete = post.authorId === currentUser.uid || isAdmin;
-    
+
     if (!canDelete) {
       setNotification({
         message: isAdmin ? 'You can only delete posts as admin.' : 'You can only delete your own posts.',
@@ -336,7 +352,7 @@ function App() {
 
   const confirmDelete = async () => {
     if (!deleteConfirmPost) return;
-    
+
     try {
       await deletePost(deleteConfirmPost.id);
       setPosts(posts.filter(p => p.id !== deleteConfirmPost.id));
@@ -366,17 +382,17 @@ function App() {
       // Show only published posts in "All Posts" view
       return post.status === 'published';
     }
-    
+
     if (filter === 'drafts') {
       // Only show drafts to their creators
       return post.status === 'draft' && currentUser && post.authorId === currentUser.uid;
     }
-    
+
     if (filter === 'published') {
       // Only show published posts by the current user
       return post.status === 'published' && currentUser && post.authorId === currentUser.uid;
     }
-    
+
     return post.status === filter;
   });
 
@@ -402,29 +418,29 @@ function App() {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
                 <Trash2 className="h-8 w-8 text-red-600" />
               </div>
-              
+
               {/* Title */}
               <h3 className="text-xl font-bold text-gray-900 mb-2">
                 {isAdmin && deleteConfirmPost.authorId !== currentUser?.uid ? 'Admin Delete Post' : 'Delete Post'}
               </h3>
-              
+
               {/* Message */}
               <p className="text-gray-600 mb-6">
                 {isAdmin && deleteConfirmPost.authorId !== currentUser?.uid ? (
                   <>
-                    Are you sure you want to delete "<span className="font-semibold text-gray-900">{deleteConfirmPost.title}</span>" as admin? 
+                    Are you sure you want to delete "<span className="font-semibold text-gray-900">{deleteConfirmPost.title}</span>" as admin?
                     <br />
                     <span className="text-sm text-red-600">This action cannot be undone.</span>
                   </>
                 ) : (
                   <>
-                    Are you sure you want to delete "<span className="font-semibold text-gray-900">{deleteConfirmPost.title}</span>"? 
+                    Are you sure you want to delete "<span className="font-semibold text-gray-900">{deleteConfirmPost.title}</span>"?
                     <br />
                     <span className="text-sm text-red-600">This action cannot be undone.</span>
                   </>
                 )}
               </p>
-              
+
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
@@ -446,7 +462,7 @@ function App() {
           </div>
         </div>
       )}
-      
+
       {/* Loading Screen */}
       {authLoading && (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -467,51 +483,51 @@ function App() {
               <div className="flex justify-between items-center">
                 {/* Logo */}
                 <div className="flex items-center space-x-2">
-                  <img 
-                    src={WriteMindLogo} 
-                    alt="WriteMind Logo" 
+                  <img
+                    src={WriteMindLogo}
+                    alt="WriteMind Logo"
                     className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 object-contain"
                   />
                 </div>
-                
+
                 {/* Desktop Navigation */}
                 <nav className="hidden lg:flex space-x-8">
-                  <button 
+                  <button
                     onClick={() => setActiveTab('home')}
                     className={`${activeTab === 'home' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-semibold text-base transition-colors py-1 px-2 rounded-lg hover:bg-indigo-50`}
                   >
                     Home
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveTab('list')}
                     className={`${activeTab === 'list' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-semibold text-base transition-colors py-1 px-2 rounded-lg hover:bg-indigo-50`}
                   >
                     Blog
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveTab('about')}
                     className={`${activeTab === 'about' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-semibold text-base transition-colors py-1 px-2 rounded-lg hover:bg-indigo-50`}
                   >
                     About
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveTab('contact')}
                     className={`${activeTab === 'contact' ? 'text-indigo-600' : 'text-gray-500'} hover:text-indigo-600 font-semibold text-base transition-colors py-1 px-2 rounded-lg hover:bg-indigo-50`}
                   >
                     Contact
                   </button>
                 </nav>
-                
+
                 {/* Mobile Menu Button */}
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="lg:hidden"
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
                 >
                   <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
                 </Button>
-                
+
                 {/* Desktop User Actions */}
                 <div className="hidden lg:flex items-center space-x-3">
                   {currentUser ? (
@@ -522,15 +538,24 @@ function App() {
                         </div>
                         <span className="text-sm font-medium text-gray-700">{currentUser.name}</span>
                       </div>
-                      <Button 
+                      <Button
                         variant="outline"
                         size="sm"
                         onClick={handleNewPost}
                       >
                         New Post
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowProfileSettings(true)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <User className="w-5 h-5 mr-2" />
+                        Profile
+                      </Button>
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={logout}
                         className="text-gray-500 hover:text-gray-700"
@@ -543,8 +568,8 @@ function App() {
                     </>
                   ) : (
                     <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           setAuthMode('login');
@@ -554,7 +579,7 @@ function App() {
                         <LogIn className="w-5 h-5 mr-2" />
                         Sign In
                       </Button>
-                      <Button 
+                      <Button
                         size="sm"
                         onClick={() => {
                           setAuthMode('register');
@@ -568,39 +593,39 @@ function App() {
                   )}
                 </div>
               </div>
-              
+
               {/* Mobile Menu */}
               {showMobileMenu && (
                 <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
                   <div className="px-4 py-4 space-y-4">
                     {/* Mobile Navigation */}
                     <nav className="space-y-3">
-                      <button 
+                      <button
                         onClick={() => { setActiveTab('home'); setShowMobileMenu(false); }}
                         className={`block w-full text-left py-2 px-3 rounded-lg text-base font-semibold ${activeTab === 'home' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
                       >
                         Home
                       </button>
-                      <button 
+                      <button
                         onClick={() => { setActiveTab('list'); setShowMobileMenu(false); }}
                         className={`block w-full text-left py-2 px-3 rounded-lg text-base font-semibold ${activeTab === 'list' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
                       >
                         Blog
                       </button>
-                      <button 
+                      <button
                         onClick={() => { setActiveTab('about'); setShowMobileMenu(false); }}
                         className={`block w-full text-left py-2 px-3 rounded-lg text-base font-semibold ${activeTab === 'about' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
                       >
                         About
                       </button>
-                      <button 
+                      <button
                         onClick={() => { setActiveTab('contact'); setShowMobileMenu(false); }}
                         className={`block w-full text-left py-2 px-3 rounded-lg text-base font-semibold ${activeTab === 'contact' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}
                       >
                         Contact
                       </button>
                     </nav>
-                    
+
                     {/* Mobile User Actions */}
                     <div className="border-t border-gray-200 pt-4">
                       {currentUser ? (
@@ -611,7 +636,7 @@ function App() {
                             </div>
                             <span className="text-sm font-medium text-gray-700">{currentUser.name}</span>
                           </div>
-                          <Button 
+                          <Button
                             variant="outline"
                             size="sm"
                             className="w-full"
@@ -619,8 +644,17 @@ function App() {
                           >
                             New Post
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-gray-500"
+                            onClick={() => { setShowProfileSettings(true); setShowMobileMenu(false); }}
+                          >
+                            <User className="w-5 h-5 mr-2" />
+                            Profile
+                          </Button>
+                          <Button
+                            variant="ghost"
                             size="sm"
                             className="w-full text-gray-500"
                             onClick={() => { logout(); setShowMobileMenu(false); }}
@@ -631,8 +665,8 @@ function App() {
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             className="w-full"
                             onClick={() => { setAuthMode('login'); setShowAuthModal(true); setShowMobileMenu(false); }}
@@ -640,7 +674,7 @@ function App() {
                             <LogIn className="w-5 h-5 mr-2" />
                             Sign In
                           </Button>
-                          <Button 
+                          <Button
                             size="sm"
                             className="w-full"
                             onClick={() => { setAuthMode('register'); setShowAuthModal(true); setShowMobileMenu(false); }}
@@ -672,15 +706,15 @@ function App() {
                     A beautiful platform for writers to create content, build an audience, and share their knowledge with the world.
                   </p>
                   <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
-                    <Button 
+                    <Button
                       size="lg"
                       onClick={handleNewPost}
                       className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
                     >
                       Start Writing Now
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="lg"
                       className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
                       onClick={() => setActiveTab('list')}
@@ -690,9 +724,18 @@ function App() {
                   </div>
                 </div>
               </section>
+
             )}
 
-            {/* Features Section */}
+            {/* Recommended Posts Section */}
+            {activeTab === 'home' && (
+              <RecommendedPosts
+                allPosts={posts}
+                onViewPost={handleViewPost}
+              />
+            )}
+
+
             {activeTab === 'home' && (
               <section className="py-12 sm:py-16 bg-white">
                 <div className="container mx-auto px-4">
@@ -775,8 +818,8 @@ function App() {
                           </div>
                         </CardContent>
                         <CardFooter>
-                          <Button 
-                            variant="link" 
+                          <Button
+                            variant="link"
                             className="px-0 text-indigo-600"
                             onClick={() => handleViewPost(post)}
                           >
@@ -787,8 +830,8 @@ function App() {
                     ))}
                   </div>
                   <div className="text-center mt-12">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="lg"
                       onClick={() => setActiveTab('list')}
                     >
@@ -859,8 +902,8 @@ function App() {
                         required
                         className="flex-grow py-4 px-6 text-gray-900"
                       />
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         size="lg"
                         className="py-4 px-8 text-lg bg-indigo-600 text-white hover:bg-indigo-700 font-semibold"
                       >
@@ -893,15 +936,15 @@ function App() {
                       We're on a mission to democratize publishing and give every writer a platform to share their voice with the world.
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
-                      <Button 
+                      <Button
                         size="lg"
                         onClick={handleNewPost}
                         className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
                       >
                         Start Writing Now
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="lg"
                         className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
                         onClick={() => setActiveTab('list')}
@@ -1076,14 +1119,14 @@ function App() {
                         Join thousands of writers who are already sharing their stories with the world.
                       </p>
                       <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <button 
+                        <button
                           onClick={handleNewPost}
                           className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold bg-white text-indigo-600 hover:bg-indigo-600 hover:text-white shadow-lg transform hover:scale-105 transition-all duration-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
                           <Pen className="w-5 h-5 mr-2" />
                           Start Writing
                         </button>
-                        <button 
+                        <button
                           onClick={() => setActiveTab('list')}
                           className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold bg-indigo-600 text-white hover:bg-white hover:text-indigo-600 shadow-lg transform hover:scale-105 transition-all duration-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
@@ -1127,18 +1170,18 @@ function App() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <Label htmlFor="firstName" className="text-gray-700 font-medium">First Name</Label>
-                                <Input 
-                                  id="firstName" 
-                                  type="text" 
+                                <Input
+                                  id="firstName"
+                                  type="text"
                                   placeholder="Your first name"
                                   className="mt-1"
                                 />
                               </div>
                               <div>
                                 <Label htmlFor="lastName" className="text-gray-700 font-medium">Last Name</Label>
-                                <Input 
-                                  id="lastName" 
-                                  type="text" 
+                                <Input
+                                  id="lastName"
+                                  type="text"
                                   placeholder="Your last name"
                                   className="mt-1"
                                 />
@@ -1146,32 +1189,32 @@ function App() {
                             </div>
                             <div>
                               <Label htmlFor="email" className="text-gray-700 font-medium">Email Address</Label>
-                              <Input 
-                                id="email" 
-                                type="email" 
+                              <Input
+                                id="email"
+                                type="email"
                                 placeholder="your.email@example.com"
                                 className="mt-1"
                               />
                             </div>
                             <div>
                               <Label htmlFor="subject" className="text-gray-700 font-medium">Subject</Label>
-                              <Input 
-                                id="subject" 
-                                type="text" 
+                              <Input
+                                id="subject"
+                                type="text"
                                 placeholder="What's this about?"
                                 className="mt-1"
                               />
                             </div>
                             <div>
                               <Label htmlFor="message" className="text-gray-700 font-medium">Message</Label>
-                              <Textarea 
-                                id="message" 
+                              <Textarea
+                                id="message"
                                 placeholder="Tell us what's on your mind..."
                                 className="mt-1 min-h-[120px]"
                               />
                             </div>
-                            <Button 
-                              type="submit" 
+                            <Button
+                              type="submit"
                               size="lg"
                               className="w-full sm:w-auto"
                             >
@@ -1184,34 +1227,34 @@ function App() {
                         {/* Contact Information */}
                         <div>
                           <h2 className="text-3xl font-bold text-gray-900 mb-6">Contact Information</h2>
-                                                     <div className="space-y-6">
-                             <div className="flex items-start space-x-4">
-                               <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                 <Mail className="w-6 h-6 text-indigo-600" />
-                               </div>
-                               <div>
-                                 <h3 className="text-lg font-semibold text-gray-900 mb-1">Email</h3>
-                                 <p className="text-gray-600">priyanshtyagi30@gmail.com</p>
-                                 <p className="text-sm text-gray-500">We'll get back to you within 24 hours</p>
-                               </div>
-                             </div>
-                           </div>
+                          <div className="space-y-6">
+                            <div className="flex items-start space-x-4">
+                              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Mail className="w-6 h-6 text-indigo-600" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-1">Email</h3>
+                                <p className="text-gray-600">priyanshtyagi30@gmail.com</p>
+                                <p className="text-sm text-gray-500">We'll get back to you within 24 hours</p>
+                              </div>
+                            </div>
+                          </div>
 
-                                                     {/* Social Links */}
-                           <div className="mt-8 pt-8 border-t border-gray-200">
-                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Follow Us</h3>
-                             <div className="flex space-x-4">
-                               <a href="https://www.instagram.com/brop1_2/" className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 hover:bg-purple-200 transition-colors" target="_blank" rel="noopener noreferrer">
-                                 <Instagram className="w-5 h-5" />
-                               </a>
-                               <a href="https://www.linkedin.com/in/priyansh-tyagi-3972442b0" className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-200 transition-colors" target="_blank" rel="noopener noreferrer">
-                                 <Linkedin className="w-5 h-5" />
-                               </a>
-                               <a href="https://github.com/BroPriyansh" className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors" target="_blank" rel="noopener noreferrer">
-                                 <Github className="w-5 h-5" />
-                               </a>
-                             </div>
-                           </div>
+                          {/* Social Links */}
+                          <div className="mt-8 pt-8 border-t border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Follow Us</h3>
+                            <div className="flex space-x-4">
+                              <a href="https://www.instagram.com/brop1_2/" className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 hover:bg-purple-200 transition-colors" target="_blank" rel="noopener noreferrer">
+                                <Instagram className="w-5 h-5" />
+                              </a>
+                              <a href="https://www.linkedin.com/in/priyansh-tyagi-3972442b0" className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-200 transition-colors" target="_blank" rel="noopener noreferrer">
+                                <Linkedin className="w-5 h-5" />
+                              </a>
+                              <a href="https://github.com/BroPriyansh" className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors" target="_blank" rel="noopener noreferrer">
+                                <Github className="w-5 h-5" />
+                              </a>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1266,7 +1309,7 @@ function App() {
 
             {/* Article View */}
             {activeTab === 'article' && viewingPost && (
-              <ArticleView 
+              <ArticleView
                 post={viewingPost}
                 allPosts={posts}
                 onBack={handleBackFromArticle}
@@ -1290,7 +1333,7 @@ function App() {
                         You need to be logged in to create and edit blog posts. Please sign in or create an account to continue.
                       </p>
                       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button 
+                        <Button
                           onClick={() => {
                             setAuthMode('login');
                             setShowAuthModal(true);
@@ -1300,7 +1343,7 @@ function App() {
                           <LogIn className="w-4 h-4 mr-2" />
                           Sign In
                         </Button>
-                        <Button 
+                        <Button
                           variant="outline"
                           onClick={() => {
                             setAuthMode('register');
@@ -1312,7 +1355,7 @@ function App() {
                           Sign Up
                         </Button>
                       </div>
-                      <Button 
+                      <Button
                         variant="ghost"
                         onClick={() => setActiveTab('list')}
                         className="mt-6"
@@ -1322,7 +1365,7 @@ function App() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Show editor only if user is logged in */}
                 {activeTab === 'editor' && currentUser && (
                   <Editor
@@ -1351,7 +1394,7 @@ function App() {
                       <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
                       <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-2000"></div>
                     </div>
-                    
+
                     <div className="container mx-auto px-4 relative z-10">
                       <div className="max-w-7xl mx-auto">
                         {/* Header Section */}
@@ -1363,15 +1406,15 @@ function App() {
                             </h1>
                           </div>
                           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                            {filter === 'all' 
-                              ? 'Discover insightful articles, tutorials, and stories from our community of writers' 
-                              : filter === 'drafts' 
-                                ? 'Your work in progress - continue where you left off' 
+                            {filter === 'all'
+                              ? 'Discover insightful articles, tutorials, and stories from our community of writers'
+                              : filter === 'drafts'
+                                ? 'Your work in progress - continue where you left off'
                                 : 'Published articles ready to inspire and educate'
                             }
                           </p>
                         </div>
-                        
+
                         {/* Filter Buttons */}
                         <div className="flex flex-wrap justify-center gap-3 mb-12">
                           {[
@@ -1384,11 +1427,10 @@ function App() {
                               variant={filter === key ? 'default' : 'outline'}
                               size="sm"
                               onClick={() => setFilter(key)}
-                              className={`rounded-full px-6 py-3 transition-all duration-300 ${
-                                filter === key 
-                                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg transform scale-105' 
-                                  : 'hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 border-indigo-200 hover:shadow-md'
-                              }`}
+                              className={`rounded-full px-6 py-3 transition-all duration-300 ${filter === key
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg transform scale-105'
+                                : 'hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 border-indigo-200 hover:shadow-md'
+                                }`}
                             >
                               <Icon className="w-4 h-4 mr-2" />
                               {label}
@@ -1408,22 +1450,22 @@ function App() {
                                     <BookOpen className="w-12 h-12 text-indigo-600" />
                                   </div>
                                   <h3 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                                    {filter === 'all' 
-                                      ? 'No posts found' 
-                                      : filter === 'drafts' 
-                                        ? 'No drafts yet' 
+                                    {filter === 'all'
+                                      ? 'No posts found'
+                                      : filter === 'drafts'
+                                        ? 'No drafts yet'
                                         : 'No published posts yet'
                                     }
                                   </h3>
                                   <p className="text-gray-600 mb-10 max-w-md mx-auto text-lg">
-                                    {filter === 'all' 
-                                      ? 'Create your first post to get started!' 
-                                      : filter === 'drafts' 
-                                        ? 'Start writing to see your drafts here' 
+                                    {filter === 'all'
+                                      ? 'Create your first post to get started!'
+                                      : filter === 'drafts'
+                                        ? 'Start writing to see your drafts here'
                                         : 'Publish your first article to see it here'
                                     }
                                   </p>
-                                  <Button 
+                                  <Button
                                     className="px-10 py-4 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg"
                                     onClick={handleNewPost}
                                   >
@@ -1442,11 +1484,10 @@ function App() {
                                       <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                                         <div className="flex-1">
                                           <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
-                                            <span className={`px-4 py-2 rounded-full text-xs font-medium w-fit ${
-                                              post.status === 'published' 
-                                                ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200 shadow-sm' 
-                                                : 'bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 border border-yellow-200 shadow-sm'
-                                            }`}>
+                                            <span className={`px-4 py-2 rounded-full text-xs font-medium w-fit ${post.status === 'published'
+                                              ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200 shadow-sm'
+                                              : 'bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 border border-yellow-200 shadow-sm'
+                                              }`}>
                                               {post.status}
                                             </span>
                                             <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-500">
@@ -1462,20 +1503,20 @@ function App() {
                                               )}
                                             </div>
                                           </div>
-                                          
+
                                           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 group-hover:text-indigo-600 transition-colors">
                                             {post.title}
                                           </h2>
-                                          
+
                                           <p className="text-gray-600 leading-relaxed mb-4 line-clamp-3">
                                             {post.excerpt || post.content.substring(0, 150) + '...'}
                                           </p>
-                                          
+
                                           {post.tags && (
                                             <div className="flex flex-wrap gap-3 mb-6">
                                               {post.tags.split(',').slice(0, 3).map(tag => (
-                                                <span 
-                                                  key={tag} 
+                                                <span
+                                                  key={tag}
                                                   className="px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 rounded-full text-xs sm:text-sm font-medium border border-indigo-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
                                                 >
                                                   #{tag.trim()}
@@ -1485,7 +1526,7 @@ function App() {
                                           )}
                                         </div>
                                       </div>
-                                      
+
                                       <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t border-gray-100 gap-3">
                                         <div className="flex items-center space-x-3">
                                           {currentUser && (post.authorId === currentUser.uid || isAdmin) && (
@@ -1538,24 +1579,24 @@ function App() {
                               {/* Gradient background */}
                               <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-purple-50/50"></div>
                               <div className="relative">
-                              <CardHeader className="pb-4">
-                                <CardTitle className="text-xl flex items-center space-x-2">
-                                  <Pen className="w-5 h-5 text-indigo-600" />
-                                  <span>Create New Post</span>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <p className="text-gray-600 mb-6 leading-relaxed">
-                                  Share your knowledge and insights with our community. Start writing your next great article.
-                                </p>
-                                <Button 
-                                  className="w-full py-3 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-                                  onClick={handleNewPost}
-                                >
-                                  <Pen className="w-5 h-5 mr-2" />
-                                  New Post
-                                </Button>
-                              </CardContent>
+                                <CardHeader className="pb-4">
+                                  <CardTitle className="text-xl flex items-center space-x-2">
+                                    <Pen className="w-5 h-5 text-indigo-600" />
+                                    <span>Create New Post</span>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <p className="text-gray-600 mb-6 leading-relaxed">
+                                    Share your knowledge and insights with our community. Start writing your next great article.
+                                  </p>
+                                  <Button
+                                    className="w-full py-3 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                                    onClick={handleNewPost}
+                                  >
+                                    <Pen className="w-5 h-5 mr-2" />
+                                    New Post
+                                  </Button>
+                                </CardContent>
                               </div>
                             </Card>
 
@@ -1582,9 +1623,9 @@ function App() {
                                       )
                                         .slice(0, 10)
                                         .map(tag => (
-                                          <Button 
-                                            key={tag} 
-                                            variant="outline" 
+                                          <Button
+                                            key={tag}
+                                            variant="outline"
                                             size="sm"
                                             className="rounded-full hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-600 hover:border-purple-200 transition-all duration-300"
                                             onClick={() => {
@@ -1644,10 +1685,16 @@ function App() {
             )}
 
             {/* Auth Modal */}
-            <AuthModal 
+            <AuthModal
               isOpen={showAuthModal}
               onClose={() => setShowAuthModal(false)}
               initialMode={authMode}
+            />
+
+            {/* Profile Settings Modal */}
+            <ProfileSettings
+              isOpen={showProfileSettings}
+              onClose={() => setShowProfileSettings(false)}
             />
 
 
@@ -1669,10 +1716,10 @@ function App() {
                 <div>
                   <h3 className="text-white font-medium mb-4">Navigation</h3>
                   <ul className="space-y-2">
-                    <li><button onClick={() => setActiveTab('home')} className="hover:text-white">Home</button></li>
-                    <li><button onClick={() => setActiveTab('list')} className="hover:text-white">Blog</button></li>
-                    <li><a href="#about" className="hover:text-white">About</a></li>
-                    <li><a href="#contact" className="hover:text-white">Contact</a></li>
+                    <li><button onClick={() => setActiveTab('home')} className="hover:text-white transition-colors">Home</button></li>
+                    <li><button onClick={() => setActiveTab('list')} className="hover:text-white transition-colors">Blog</button></li>
+                    <li><button onClick={() => setActiveTab('about')} className="hover:text-white transition-colors">About</button></li>
+                    <li><button onClick={() => setActiveTab('contact')} className="hover:text-white transition-colors">Contact</button></li>
                   </ul>
                 </div>
                 <div>
@@ -1707,8 +1754,9 @@ function App() {
             </div>
           </footer>
         </>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
 
