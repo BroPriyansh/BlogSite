@@ -309,7 +309,7 @@ function App() {
 
     if (!currentUser.emailVerified) {
       setNotification({
-        message: 'Please verify your email address to create new posts.',
+        message: 'Please verify your email address to create new posts. Also check your spam folder for link',
         type: 'error'
       });
       return;
@@ -973,7 +973,7 @@ function App() {
                         <div>
                           <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Story</h2>
                           <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                            WriteMind was founded in 2023 with a simple mission: to create the best platform for writers to share their knowledge and ideas with the world.
+                            WriteMind was founded in 2025 with a simple mission: to create the best platform for writers to share their knowledge and ideas with the world.
                           </p>
                           <p className="text-lg text-gray-600 mb-6 leading-relaxed">
                             We believe everyone has valuable insights to share, and we're building tools to make publishing accessible to all - from hobby bloggers to professional writers.
@@ -986,19 +986,19 @@ function App() {
                           <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl p-8 shadow-lg">
                             <div className="grid grid-cols-2 gap-4">
                               <div className="text-center">
-                                <div className="text-3xl font-bold text-indigo-600 mb-2">2023</div>
+                                <div className="text-3xl font-bold text-indigo-600 mb-2">2025</div>
                                 <div className="text-gray-600">Founded</div>
                               </div>
                               <div className="text-center">
-                                <div className="text-3xl font-bold text-purple-600 mb-2">100+</div>
+                                <div className="text-3xl font-bold text-purple-600 mb-2">10+</div>
                                 <div className="text-gray-600">Articles</div>
                               </div>
                               <div className="text-center">
-                                <div className="text-3xl font-bold text-blue-600 mb-2">50+</div>
+                                <div className="text-3xl font-bold text-blue-600 mb-2">10+</div>
                                 <div className="text-gray-600">Writers</div>
                               </div>
                               <div className="text-center">
-                                <div className="text-3xl font-bold text-pink-600 mb-2">10K+</div>
+                                <div className="text-3xl font-bold text-pink-600 mb-2">10+</div>
                                 <div className="text-gray-600">Readers</div>
                               </div>
                             </div>
@@ -1754,7 +1754,7 @@ function App() {
                     </a>
                   </div>
                   <p className="mt-4 text-gray-400">
-                    contact@writemind.com
+                    priyanshtyagi30@gmail.com
                   </p>
                 </div>
               </div>

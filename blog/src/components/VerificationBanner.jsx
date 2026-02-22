@@ -41,7 +41,7 @@ export default function VerificationBanner() {
                     <AlertTriangle className="w-5 h-5 mr-3 flex-shrink-0 text-amber-600" />
                     <span>
                         Your email address (<strong>{currentUser.email}</strong>) is not verified.
-                        Please check your inbox for the verification link.
+                        Please check your inbox for the verification link. Also check your spam folder if you don't see it.
                     </span>
                 </div>
 
